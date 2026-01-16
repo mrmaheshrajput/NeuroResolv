@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: neuroresolv-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./neuroresolv.db
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-not-for-production}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-sample-gemini-api-key}
+      - OPIK_API_KEY=${OPIK_API_KEY:-sample-opik-api-key}
+      - OPIK_WORKSPACE=${OPIK_WORKSPACE:-default}
+      - OPIK_PROJECT_NAME=${OPIK_PROJECT_NAME:-neuroresolv}
+      - CHROMA_PERSIST_DIRECTORY=/app/chroma_data
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DEBUG=${DEBUG:-true}
+    volumes:
+      - backend_data:/app/neuroresolv.db
+      - chroma_data:/app/chroma_data
+    networks:
+      - neuroresolv-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: neuroresolv-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - neuroresolv-network
+
+  # Optional: PostgreSQL for production
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: neuroresolv-postgres
+  #   environment:
+  #     POSTGRES_USER: neuroresolv
+  #     POSTGRES_PASSWORD: neuroresolv_password
+  #     POSTGRES_DB: neuroresolv
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - neuroresolv-network
+
+volumes:
+  backend_data:
+  chroma_data:
+  # postgres_data:
+
+networks:
+  neuroresolv-network:
+    driver: bridge

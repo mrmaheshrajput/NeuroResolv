@@ -1,0 +1,221 @@
+.session-page {
+    min-height: 100vh;
+    background: var(--dark-bg);
+    display: flex;
+    flex-direction: column;
+}
+
+.session-header {
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--dark-border);
+    background: var(--dark-surface);
+}
+
+.session-header .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.session-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.day-badge {
+    padding: var(--space-2) var(--space-4);
+    background: var(--gradient-primary);
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: white;
+}
+
+.reinforcement-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-full);
+    color: var(--accent-orange);
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.reading-progress-bar {
+    height: 3px;
+    background: var(--dark-surface-2);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.reading-progress-fill {
+    height: 100%;
+    background: var(--gradient-primary);
+    transition: width 0.2s ease;
+}
+
+.session-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-8) 0;
+}
+
+.session-main .container {
+    max-width: 800px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.session-intro {
+    margin-bottom: var(--space-8);
+}
+
+.session-intro h1 {
+    font-size: 2rem;
+    margin-bottom: var(--space-3);
+}
+
+.session-summary {
+    font-size: 1.125rem;
+    color: var(--gray-300);
+    margin-bottom: var(--space-4);
+}
+
+.session-concepts {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.concepts-label {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+}
+
+.concepts-list {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.concept-tag {
+    padding: var(--space-1) var(--space-3);
+    background: rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: var(--radius-full);
+    font-size: 0.8125rem;
+    color: var(--primary-300);
+}
+
+.content-reader {
+    flex: 1;
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
+    max-height: 60vh;
+    overflow-y: auto;
+    margin-bottom: var(--space-6);
+}
+
+.content-body {
+    font-size: 1.0625rem;
+    line-height: 1.8;
+}
+
+.content-paragraph {
+    color: var(--gray-200);
+    margin-bottom: var(--space-4);
+}
+
+.no-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-12);
+    text-align: center;
+}
+
+.no-content svg {
+    color: var(--gray-600);
+    margin-bottom: var(--space-4);
+}
+
+.no-content h3 {
+    margin-bottom: var(--space-2);
+}
+
+.no-content p {
+    color: var(--gray-400);
+}
+
+.session-footer {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+}
+
+.footer-progress {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+}
+
+.progress-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--gray-400);
+    font-size: 0.9375rem;
+}
+
+.progress-indicator {
+    color: var(--gray-400);
+    font-size: 0.9375rem;
+}
+
+.complete-btn {
+    width: 100%;
+}
+
+.loading-container,
+.error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: var(--space-4);
+}
+
+.loading-container .spinner {
+    animation: spin 1s linear infinite;
+}
+
+@media (max-width: 768px) {
+    .content-reader {
+        padding: var(--space-4);
+        max-height: 50vh;
+    }
+
+    .session-footer {
+        padding: var(--space-4);
+    }
+
+    .footer-progress {
+        flex-direction: column;
+        gap: var(--space-2);
+        align-items: flex-start;
+    }
+}

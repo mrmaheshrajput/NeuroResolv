@@ -1,0 +1,320 @@
+.login-page {
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-background {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: var(--dark-bg);
+}
+
+.gradient-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.5;
+}
+
+.orb-1 {
+    width: 600px;
+    height: 600px;
+    background: var(--primary-600);
+    top: -200px;
+    left: -200px;
+    animation: float 8s ease-in-out infinite;
+}
+
+.orb-2 {
+    width: 400px;
+    height: 400px;
+    background: var(--accent-pink);
+    bottom: -100px;
+    right: -100px;
+    animation: float 10s ease-in-out infinite reverse;
+}
+
+.orb-3 {
+    width: 300px;
+    height: 300px;
+    background: var(--accent-orange);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: pulse 6s ease-in-out infinite;
+}
+
+.login-container {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 100vh;
+}
+
+.login-hero {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: var(--space-12);
+}
+
+.hero-content {
+    max-width: 600px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-8);
+}
+
+.logo-icon {
+    width: 48px;
+    height: 48px;
+    color: var(--primary-400);
+}
+
+.logo-text {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: var(--space-6);
+}
+
+.hero-description {
+    font-size: 1.125rem;
+    color: var(--gray-300);
+    margin-bottom: var(--space-10);
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+}
+
+.feature-card {
+    background: rgba(18, 18, 26, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--dark-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    transition: all var(--transition-normal);
+}
+
+.feature-card:hover {
+    border-color: var(--primary-600);
+    transform: translateY(-2px);
+}
+
+.feature-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gradient-primary);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-3);
+}
+
+.feature-icon svg {
+    width: 20px;
+    height: 20px;
+    color: white;
+}
+
+.feature-card h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: var(--space-2);
+    color: var(--gray-100);
+}
+
+.feature-card p {
+    font-size: 0.875rem;
+    color: var(--gray-400);
+    line-height: 1.5;
+}
+
+.hero-links {
+    display: flex;
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+}
+
+.hero-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--gray-300);
+    font-size: 0.9375rem;
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--dark-border);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+}
+
+.hero-link:hover {
+    color: var(--gray-100);
+    border-color: var(--gray-500);
+    background: var(--dark-surface-2);
+}
+
+.built-with {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.built-with span {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+}
+
+.tech-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.tech-badge {
+    padding: var(--space-1) var(--space-3);
+    background: var(--dark-surface-2);
+    border: 1px solid var(--dark-border);
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    color: var(--gray-300);
+}
+
+.login-form-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8);
+}
+
+.login-form-container {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(18, 18, 26, 0.8);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--dark-border);
+    border-radius: var(--radius-2xl);
+    padding: var(--space-10);
+}
+
+.form-header {
+    text-align: center;
+    margin-bottom: var(--space-8);
+}
+
+.form-header h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: var(--space-2);
+}
+
+.form-header p {
+    color: var(--gray-400);
+}
+
+.error-message {
+    background: rgba(244, 63, 94, 0.1);
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    color: var(--accent-rose);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    margin-bottom: var(--space-4);
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.form-footer {
+    text-align: center;
+    margin-top: var(--space-6);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--dark-border);
+}
+
+.form-footer p {
+    font-size: 0.9375rem;
+    color: var(--gray-400);
+}
+
+.form-footer a {
+    color: var(--primary-400);
+    font-weight: 500;
+}
+
+.demo-credentials {
+    margin-top: var(--space-6);
+    padding: var(--space-4);
+    background: var(--dark-surface-2);
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+
+.demo-credentials p {
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+    margin-bottom: var(--space-2);
+}
+
+.demo-credentials code {
+    font-size: 0.8125rem;
+    color: var(--primary-400);
+    font-family: monospace;
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@media (max-width: 1024px) {
+    .login-container {
+        grid-template-columns: 1fr;
+    }
+
+    .login-hero {
+        padding: var(--space-6);
+        padding-bottom: var(--space-4);
+    }
+
+    .hero-title {
+        font-size: 2.5rem;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .login-form-section {
+        padding: var(--space-6);
+        padding-top: 0;
+    }
+
+    .login-form-container {
+        padding: var(--space-6);
+    }
+}

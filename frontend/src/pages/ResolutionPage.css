@@ -1,0 +1,323 @@
+.resolution-page {
+    min-height: 100vh;
+    background: var(--dark-bg);
+}
+
+.page-header {
+    padding: var(--space-6) 0;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--gray-400);
+    font-size: 0.9375rem;
+}
+
+.back-link:hover {
+    color: var(--gray-200);
+}
+
+.page-main {
+    padding: var(--space-8) 0;
+}
+
+.loading-container,
+.error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: var(--space-4);
+}
+
+.loading-container .spinner {
+    animation: spin 1s linear infinite;
+}
+
+.resolution-hero {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-6);
+    margin-bottom: var(--space-8);
+}
+
+.hero-icon {
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gradient-primary);
+    border-radius: var(--radius-xl);
+    flex-shrink: 0;
+}
+
+.hero-icon svg {
+    color: white;
+}
+
+.hero-content h1 {
+    font-size: 2rem;
+    margin-bottom: var(--space-2);
+}
+
+.hero-content p {
+    font-size: 1.125rem;
+    color: var(--gray-300);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: var(--radius-lg);
+}
+
+.stat-icon {
+    color: var(--primary-400);
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gray-100);
+}
+
+.stat-label {
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+}
+
+.main-progress {
+    margin-bottom: var(--space-8);
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+    font-size: 0.875rem;
+    color: var(--gray-400);
+}
+
+.progress-bar.large {
+    height: 12px;
+}
+
+.setup-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-6);
+    margin-bottom: var(--space-8);
+}
+
+.setup-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
+    text-align: center;
+}
+
+.setup-icon {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--dark-surface-2);
+    border-radius: 50%;
+    margin: 0 auto var(--space-4);
+}
+
+.setup-icon svg {
+    color: var(--primary-400);
+}
+
+.setup-card h3 {
+    margin-bottom: var(--space-2);
+}
+
+.setup-card p {
+    color: var(--gray-400);
+    margin-bottom: var(--space-4);
+}
+
+.action-section {
+    margin-bottom: var(--space-8);
+}
+
+.start-btn {
+    width: 100%;
+    padding: var(--space-5) var(--space-8);
+    font-size: 1.125rem;
+    animation: glow 2s ease-in-out infinite;
+}
+
+.weak-areas-section {
+    background: rgba(244, 63, 94, 0.1);
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    margin-bottom: var(--space-8);
+}
+
+.weak-areas-section h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: 1.125rem;
+    color: var(--accent-rose);
+    margin-bottom: var(--space-4);
+}
+
+.weak-concepts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.concept-chip {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--dark-surface);
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+}
+
+.concept-name {
+    color: var(--gray-200);
+}
+
+.concept-score {
+    color: var(--accent-rose);
+    font-weight: 500;
+}
+
+.syllabus-section h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: 1.5rem;
+    margin-bottom: var(--space-6);
+}
+
+.syllabus-days {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.syllabus-day {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+}
+
+.syllabus-day:hover {
+    border-color: var(--gray-600);
+}
+
+.syllabus-day.completed {
+    opacity: 0.6;
+}
+
+.syllabus-day.completed .day-number svg {
+    color: var(--accent-emerald);
+}
+
+.syllabus-day.current {
+    border-color: var(--primary-500);
+    background: rgba(139, 92, 246, 0.1);
+}
+
+.day-number {
+    width: 60px;
+    flex-shrink: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--gray-400);
+}
+
+.day-content {
+    flex: 1;
+}
+
+.day-content h4 {
+    font-size: 1rem;
+    margin-bottom: var(--space-1);
+    color: var(--gray-100);
+}
+
+.day-content p {
+    font-size: 0.875rem;
+    color: var(--gray-400);
+    margin-bottom: var(--space-2);
+}
+
+.day-concepts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+}
+
+.concept-tag {
+    padding: var(--space-1) var(--space-2);
+    background: var(--dark-surface-2);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    color: var(--gray-400);
+}
+
+.day-time {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .resolution-hero {
+        flex-direction: column;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .syllabus-day {
+        flex-direction: column;
+    }
+
+    .day-number {
+        width: auto;
+    }
+}

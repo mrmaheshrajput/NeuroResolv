@@ -11,7 +11,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.email == user_data.email))
+    email = user_data.email.lower()
+    result = await db.execute(select(User).where(User.email == email))
     existing_user = result.scalar_one_or_none()
     
     if existing_user:
@@ -23,7 +24,7 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     hashed_password = hash_password(user_data.password)
     
     new_user = User(
-        email=user_data.email,
+        email=email,
         full_name=user_data.full_name,
         hashed_password=hashed_password,
     )
@@ -42,7 +43,8 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.email == credentials.email))
+    email = credentials.email.lower()
+    result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
     
     if not user or not verify_password(credentials.password, user.hashed_password):

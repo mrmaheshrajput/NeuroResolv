@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -19,7 +17,7 @@ services:
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - DEBUG=${DEBUG:-true}
     volumes:
-      - backend_data:/app/neuroresolv.db
+      - backend_data:/app
       - chroma_data:/app/chroma_data
     networks:
       - neuroresolv-network

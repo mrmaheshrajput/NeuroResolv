@@ -15,7 +15,7 @@ asyncpg = "^0.30.0"
 pydantic = {extras = ["email"], version = "^2.12.5"}
 pydantic-settings = "^2.6.0"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
-passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+passlib = "^1.7.4"
 python-multipart = "^0.0.18"
 google-adk = "^1.20.0"
 opik = "^1.9.87"
@@ -25,6 +25,7 @@ ebooklib = "^0.18"
 beautifulsoup4 = "^4.12.0"
 httpx = "^0.28.0"
 alembic = "^1.14.0"
+argon2-cffi = "^25.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import hashlib
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -11,18 +12,22 @@ from app.config import get_settings
 from app.db import get_db, User
 
 settings = get_settings()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 security = HTTPBearer()
 
 ALGORITHM = "HS256"
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    password_bytes = plain_password.encode("utf-8")
+    password_hash = hashlib.sha256(password_bytes).digest()
+    return pwd_context.verify(password_hash, hashed_password)
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    password_bytes = password.encode("utf-8")
+    password_hash = hashlib.sha256(password_bytes).digest()
+    return pwd_context.hash(password_hash)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

@@ -6,6 +6,10 @@ backend/__pycache__/
 backend/**/__pycache__/
 backend/.pytest_cache/
 backend/.ruff_cache/
+backend/*.ipynb
+backend/**/.ipynb
+backend/*.ipynb_checkpoints/
+backend/**/.ipynb_checkpoints/
 
 # Frontend
 frontend/node_modules/

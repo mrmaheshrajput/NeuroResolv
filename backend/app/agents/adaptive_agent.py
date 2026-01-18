@@ -4,6 +4,7 @@ from typing import Optional
 from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
+from google.genai import types
 
 from app.config import get_settings
 from app.services import query_collection
@@ -17,7 +18,7 @@ os.environ["GOOGLE_API_KEY"] = settings.google_api_key
 def create_adaptive_agent() -> Agent:
     return Agent(
         name="adaptive_tutor",
-        model="gemini-2.0-flash",
+        model="gemini-flash-lite-latest",
         description="Adapts learning paths based on quiz performance and concept mastery",
         instruction="""You are an expert adaptive learning specialist. Your role is to analyze 
 student performance and adapt their learning path to reinforce weak areas.
@@ -143,7 +144,10 @@ Return a valid JSON adaptation plan."""
     async for event in runner.run_async(
         user_id=f"resolution_{resolution_id}",
         session_id=session.id,
-        new_message=prompt,
+        new_message=types.Content(
+            role="user",
+            parts=[types.Part(text=prompt)]
+        ),
     ):
         if hasattr(event, "content") and event.content:
             if hasattr(event.content, "parts"):
@@ -208,7 +212,7 @@ async def generate_reinforcement_content(
 ) -> dict:
     agent = Agent(
         name="content_reinforcer",
-        model="gemini-2.0-flash",
+        model="gemini-flash-lite-latest",
         description="Creates alternative explanations for difficult concepts",
         instruction="""Create new, alternative explanations for concepts the student is struggling with.
 Use different analogies, examples, and approaches than previously used.
@@ -256,7 +260,10 @@ Return a valid JSON object with reinforcement materials."""
     async for event in runner.run_async(
         user_id=f"resolution_{resolution_id}",
         session_id=session.id,
-        new_message=prompt,
+        new_message=types.Content(
+            role="user",
+            parts=[types.Part(text=prompt)]
+        ),
     ):
         if hasattr(event, "content") and event.content:
             if hasattr(event.content, "parts"):

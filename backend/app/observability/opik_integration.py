@@ -1,5 +1,6 @@
 import os
 from typing import Optional
+import opik
 from opik import track, Opik
 from opik.evaluation import evaluate
 from opik.evaluation.metrics import Hallucination, AnswerRelevance
@@ -15,11 +16,7 @@ def get_opik_client() -> Optional[Opik]:
     global _opik_client
     if _opik_client is None and settings.opik_api_key != "sample-opik-api-key":
         try:
-            _opik_client = Opik(
-                api_key=settings.opik_api_key,
-                workspace=settings.opik_workspace,
-                project_name=settings.opik_project_name,
-            )
+            _opik_client = Opik()
         except Exception:
             _opik_client = None
     return _opik_client
@@ -27,9 +24,8 @@ def get_opik_client() -> Optional[Opik]:
 
 def init_opik():
     if settings.opik_api_key and settings.opik_api_key != "sample-opik-api-key":
-        os.environ["OPIK_API_KEY"] = settings.opik_api_key
-        os.environ["OPIK_WORKSPACE"] = settings.opik_workspace
-        os.environ["OPIK_PROJECT_NAME"] = settings.opik_project_name
+        opik.configure(use_local=True)
+        os.environ["OPIK_URL_OVERRIDE"] = "http://localhost:5173/api"
 
 
 def track_llm_call(name: str):

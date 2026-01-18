@@ -1,0 +1,3 @@
+[submodule "backend/opik"]
+	path = backend/opik
+	url = https://github.com/comet-ml/opik

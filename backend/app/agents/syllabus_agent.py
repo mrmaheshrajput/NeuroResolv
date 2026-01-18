@@ -4,6 +4,7 @@ from typing import Optional
 from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
+from google.genai import types
 
 from app.config import get_settings
 from app.services import query_collection
@@ -17,7 +18,7 @@ os.environ["GOOGLE_API_KEY"] = settings.google_api_key
 def create_syllabus_agent() -> Agent:
     return Agent(
         name="syllabus_generator",
-        model="gemini-2.0-flash",
+        model="gemini-flash-lite-latest",
         description="Generates personalized learning syllabi based on user goals and uploaded content",
         instruction="""You are an expert curriculum designer and learning specialist. Your task is to create 
 a personalized, structured learning syllabus based on the user's learning goal and available content.
@@ -120,7 +121,10 @@ Return the syllabus as a valid JSON object."""
     async for event in runner.run_async(
         user_id=f"resolution_{resolution_id}",
         session_id=session.id,
-        new_message=prompt,
+        new_message=types.Content(
+            role="user",
+            parts=[types.Part(text=prompt)]
+        ),
     ):
         if hasattr(event, "content") and event.content:
             if hasattr(event.content, "parts"):

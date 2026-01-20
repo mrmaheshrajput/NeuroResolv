@@ -1,0 +1,230 @@
+.checkin-page {
+    min-height: 100vh;
+    background: var(--dark-bg);
+}
+
+.page-header {
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.header-title {
+    font-weight: 600;
+    color: var(--gray-100);
+}
+
+.page-main {
+    padding: var(--space-8) 0;
+}
+
+.checkin-container {
+    max-width: 640px;
+}
+
+.checkin-header {
+    text-align: center;
+    margin-bottom: var(--space-8);
+}
+
+.checkin-header h1 {
+    font-size: 2rem;
+    margin-bottom: var(--space-2);
+}
+
+.checkin-header p {
+    color: var(--gray-400);
+}
+
+.checkin-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.content-input {
+    min-height: 160px;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.voice-controls {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+}
+
+.voice-btn {
+    flex-shrink: 0;
+}
+
+.voice-btn.recording {
+    background: var(--accent-rose);
+    border-color: var(--accent-rose);
+    color: white;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+.input-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-4);
+}
+
+.duration-input {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.duration-input input {
+    width: 80px;
+}
+
+.duration-input span {
+    color: var(--gray-500);
+    font-size: 0.9375rem;
+}
+
+.submit-btn {
+    width: 100%;
+    margin-top: var(--space-4);
+}
+
+/* Quiz Styles */
+.quiz-container {
+    max-width: 720px;
+}
+
+.quiz-intro {
+    text-align: center;
+    margin-bottom: var(--space-8);
+}
+
+.quiz-intro h2 {
+    margin-bottom: var(--space-2);
+}
+
+.quiz-intro p {
+    color: var(--gray-400);
+}
+
+.questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.question-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+}
+
+.question-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.question-number {
+    font-weight: 700;
+    color: var(--primary-400);
+}
+
+.question-card h3 {
+    font-size: 1.125rem;
+    margin-bottom: var(--space-4);
+    line-height: 1.4;
+}
+
+.submit-quiz-btn {
+    width: 100%;
+    margin-top: var(--space-6);
+}
+
+/* Result Styles */
+.result-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8);
+}
+
+.result-card {
+    max-width: 480px;
+    width: 100%;
+    background: var(--dark-surface);
+    border: 2px solid var(--dark-border);
+    border-radius: var(--radius-2xl);
+    padding: var(--space-10);
+    text-align: center;
+}
+
+.result-card.passed {
+    border-color: var(--accent-emerald);
+}
+
+.result-card.failed {
+    border-color: var(--accent-orange);
+}
+
+.result-icon {
+    font-size: 4rem;
+    margin-bottom: var(--space-4);
+}
+
+.result-card h1 {
+    font-size: 1.75rem;
+    margin-bottom: var(--space-4);
+}
+
+.result-score {
+    margin-bottom: var(--space-4);
+}
+
+.score-value {
+    font-size: 3rem;
+    font-weight: 800;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.result-message {
+    color: var(--gray-300);
+    margin-bottom: var(--space-6);
+}
+
+.streak-updated {
+    padding: var(--space-3) var(--space-4);
+    background: rgba(245, 158, 11, 0.2);
+    border-radius: var(--radius-full);
+    display: inline-block;
+    margin-bottom: var(--space-6);
+}
+
+.streak-updated span {
+    color: var(--accent-orange);
+    font-weight: 600;
+}
+
+.loading-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-container .spinner {
+    animation: spin 1s linear infinite;
+}
+
+@media (max-width: 768px) {
+    .input-row {
+        grid-template-columns: 1fr;
+    }
+}

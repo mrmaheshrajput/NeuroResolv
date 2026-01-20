@@ -1,5 +1,13 @@
 from app.db.database import Base, get_db, create_tables, async_session_maker
-from app.db.models import User, Resolution, Syllabus, DailySession, Quiz, QuizQuestion, QuizResponse, LearningMetric
+from app.db.models import (
+    User, 
+    Resolution, 
+    Milestone, 
+    ProgressLog, 
+    VerificationQuiz, 
+    Streak,
+    WeeklyReflection,
+)
 
 __all__ = [
     "Base",
@@ -8,10 +16,9 @@ __all__ = [
     "async_session_maker",
     "User",
     "Resolution",
-    "Syllabus",
-    "DailySession",
-    "Quiz",
-    "QuizQuestion",
-    "QuizResponse",
-    "LearningMetric",
+    "Milestone",
+    "ProgressLog",
+    "VerificationQuiz",
+    "Streak",
+    "WeeklyReflection",
 ]

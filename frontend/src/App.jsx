@@ -4,8 +4,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import ResolutionPage from './pages/ResolutionPage'
-import SessionPage from './pages/SessionPage'
-import QuizPage from './pages/QuizPage'
+import CheckinPage from './pages/CheckinPage'
 
 function ProtectedRoute({ children }) {
     const { user, loading } = useAuth()
@@ -68,14 +67,9 @@ function App() {
                             <ResolutionPage />
                         </ProtectedRoute>
                     } />
-                    <Route path="/session/:resolutionId/:sessionId" element={
+                    <Route path="/checkin/:id" element={
                         <ProtectedRoute>
-                            <SessionPage />
-                        </ProtectedRoute>
-                    } />
-                    <Route path="/quiz/:sessionId" element={
-                        <ProtectedRoute>
-                            <QuizPage />
+                            <CheckinPage />
                         </ProtectedRoute>
                     } />
                     <Route path="/" element={<Navigate to="/login" replace />} />

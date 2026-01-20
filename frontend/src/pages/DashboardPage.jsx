@@ -3,11 +3,37 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { api } from '../utils/api'
 import {
-    Brain, LogOut, Plus, Target, Flame, Trophy,
-    BookOpen, ChevronRight, Calendar, TrendingUp,
-    Loader2, X
+    Brain, LogOut, Plus, Target, Flame, BookOpen,
+    ChevronRight, Loader2, X, Dumbbell, Briefcase,
+    Palette, GraduationCap, TrendingUp
 } from 'lucide-react'
 import './DashboardPage.css'
+import './CreateModal.css'
+
+const CATEGORY_ICONS = {
+    learning: GraduationCap,
+    reading: BookOpen,
+    skill: Target,
+    fitness: Dumbbell,
+    professional: Briefcase,
+    creative: Palette,
+}
+
+const CATEGORY_LABELS = {
+    learning: 'Learning & Education',
+    reading: 'Reading & Literature',
+    skill: 'Skill Acquisition',
+    fitness: 'Fitness & Wellness',
+    professional: 'Professional Development',
+    creative: 'Creative Projects',
+}
+
+const CADENCE_LABELS = {
+    daily: 'Daily check-ins',
+    '3x_week': '3 times per week',
+    weekdays: 'Weekdays only',
+    weekly: 'Weekly check-ins',
+}
 
 export default function DashboardPage() {
     const { user, logout } = useAuth()
@@ -118,47 +144,49 @@ export default function DashboardPage() {
 }
 
 function ResolutionCard({ resolution, onClick }) {
-    const progressPercent = resolution.duration_days > 0
-        ? (resolution.current_day / resolution.duration_days) * 100
-        : 0
+    const CategoryIcon = CATEGORY_ICONS[resolution.category] || Target
 
     return (
         <div className="resolution-card" onClick={onClick}>
             <div className="resolution-header">
                 <div className="resolution-icon">
-                    <BookOpen size={24} />
+                    <CategoryIcon size={24} />
                 </div>
-                <span className={`resolution-status badge badge-${resolution.status === 'active' ? 'success' : 'warning'}`}>
-                    {resolution.status}
-                </span>
+                <div className="resolution-meta">
+                    <span className={`resolution-status badge badge-${resolution.status === 'active' ? 'success' : 'warning'}`}>
+                        {resolution.status}
+                    </span>
+                    {resolution.skill_level && (
+                        <span className="badge badge-primary">{resolution.skill_level}</span>
+                    )}
+                </div>
             </div>
 
-            <h3 className="resolution-title">{resolution.title}</h3>
-            <p className="resolution-description">{resolution.description}</p>
+            <h3 className="resolution-title">{resolution.goal_statement.slice(0, 60)}...</h3>
+
+            <div className="resolution-info">
+                <span className="category-label">{CATEGORY_LABELS[resolution.category]}</span>
+                <span className="cadence-label">{CADENCE_LABELS[resolution.cadence]}</span>
+            </div>
 
             <div className="resolution-stats">
-                <div className="stat">
-                    <Calendar size={16} />
-                    <span>Day {resolution.current_day} of {resolution.duration_days}</span>
-                </div>
-                <div className="stat">
-                    <TrendingUp size={16} />
-                    <span>{resolution.daily_time_minutes} min/day</span>
-                </div>
-            </div>
-
-            <div className="resolution-progress">
-                <div className="progress-header">
-                    <span>Progress</span>
-                    <span>{Math.round(progressPercent)}%</span>
-                </div>
-                <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
-                </div>
+                {resolution.roadmap_generated ? (
+                    <>
+                        <div className="stat">
+                            <Target size={16} />
+                            <span>Milestone {resolution.current_milestone}</span>
+                        </div>
+                        {resolution.roadmap_needs_refresh && (
+                            <span className="badge badge-warning">Needs refresh</span>
+                        )}
+                    </>
+                ) : (
+                    <span className="badge badge-warning">Roadmap pending</span>
+                )}
             </div>
 
             <div className="resolution-action">
-                <span>Continue Learning</span>
+                <span>Continue</span>
                 <ChevronRight size={18} />
             </div>
         </div>
@@ -166,26 +194,48 @@ function ResolutionCard({ resolution, onClick }) {
 }
 
 function CreateResolutionModal({ onClose, onCreated }) {
-    const [title, setTitle] = useState('')
-    const [description, setDescription] = useState('')
+    const [step, setStep] = useState(1)
     const [goalStatement, setGoalStatement] = useState('')
-    const [dailyMinutes, setDailyMinutes] = useState(30)
-    const [durationDays, setDurationDays] = useState(30)
+    const [category, setCategory] = useState('learning')
+    const [skillLevel, setSkillLevel] = useState('')
+    const [cadence, setCadence] = useState('daily')
+    const [sources, setSources] = useState([])
+    const [newSourceType, setNewSourceType] = useState('book')
+    const [newSourceValue, setNewSourceValue] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
 
-    async function handleSubmit(e) {
-        e.preventDefault()
+    function addSource() {
+        if (!newSourceValue.trim()) return
+
+        setSources([...sources, {
+            type: newSourceType,
+            title: newSourceType === 'book' ? newSourceValue : null,
+            value: newSourceType !== 'book' ? newSourceValue : null,
+        }])
+        setNewSourceValue('')
+    }
+
+    function removeSource(index) {
+        setSources(sources.filter((_, i) => i !== index))
+    }
+
+    async function handleSubmit() {
+        if (goalStatement.length < 10) {
+            setError('Please describe your goal in more detail')
+            return
+        }
+
         setError('')
         setLoading(true)
 
         try {
             const resolution = await api.createResolution({
-                title,
-                description,
                 goal_statement: goalStatement,
-                daily_time_minutes: dailyMinutes,
-                duration_days: durationDays,
+                category,
+                skill_level: skillLevel || null,
+                cadence,
+                learning_sources: sources,
             })
             onCreated(resolution)
         } catch (err) {
@@ -197,7 +247,7 @@ function CreateResolutionModal({ onClose, onCreated }) {
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2>Create New Resolution</h2>
                     <button onClick={onClose} className="modal-close">
@@ -207,79 +257,176 @@ function CreateResolutionModal({ onClose, onCreated }) {
 
                 {error && <div className="error-message">{error}</div>}
 
-                <form onSubmit={handleSubmit} className="modal-form">
-                    <div className="input-group">
-                        <label htmlFor="title" className="input-label">Resolution Title</label>
-                        <input
-                            id="title"
-                            type="text"
-                            className="input"
-                            placeholder="e.g., Master LLM Operations"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            required
-                        />
-                    </div>
+                <div className="modal-steps">
+                    <div className={`step ${step >= 1 ? 'active' : ''}`}>1. Goal</div>
+                    <div className={`step ${step >= 2 ? 'active' : ''}`}>2. Details</div>
+                    <div className={`step ${step >= 3 ? 'active' : ''}`}>3. Resources</div>
+                </div>
 
-                    <div className="input-group">
-                        <label htmlFor="description" className="input-label">Description</label>
-                        <textarea
-                            id="description"
-                            className="input textarea"
-                            placeholder="What do you want to achieve?"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            required
-                        />
-                    </div>
+                <div className="modal-form">
+                    {step === 1 && (
+                        <div className="step-content">
+                            <div className="input-group">
+                                <label className="input-label">What's your goal?</label>
+                                <textarea
+                                    className="input textarea"
+                                    placeholder="e.g., Read 12 books on behavioral psychology this year, or Learn Spanish to conversational fluency"
+                                    value={goalStatement}
+                                    onChange={(e) => setGoalStatement(e.target.value)}
+                                    rows={4}
+                                />
+                                <p className="input-hint">Be specific about what you want to achieve</p>
+                            </div>
 
-                    <div className="input-group">
-                        <label htmlFor="goal" className="input-label">Learning Goal Statement</label>
-                        <textarea
-                            id="goal"
-                            className="input textarea"
-                            placeholder="e.g., I want to master LLM Ops by reading documentation and papers, 30 minutes a day."
-                            value={goalStatement}
-                            onChange={(e) => setGoalStatement(e.target.value)}
-                            required
-                        />
-                    </div>
-
-                    <div className="input-row">
-                        <div className="input-group">
-                            <label htmlFor="dailyMinutes" className="input-label">Daily Minutes</label>
-                            <input
-                                id="dailyMinutes"
-                                type="number"
-                                className="input"
-                                min={10}
-                                max={120}
-                                value={dailyMinutes}
-                                onChange={(e) => setDailyMinutes(parseInt(e.target.value))}
-                                required
-                            />
+                            <div className="input-group">
+                                <label className="input-label">Category</label>
+                                <div className="category-grid">
+                                    {Object.entries(CATEGORY_LABELS).map(([key, label]) => {
+                                        const Icon = CATEGORY_ICONS[key]
+                                        return (
+                                            <button
+                                                key={key}
+                                                type="button"
+                                                className={`category-btn ${category === key ? 'selected' : ''}`}
+                                                onClick={() => setCategory(key)}
+                                            >
+                                                <Icon size={20} />
+                                                <span>{label}</span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
                         </div>
+                    )}
 
-                        <div className="input-group">
-                            <label htmlFor="duration" className="input-label">Duration (Days)</label>
-                            <input
-                                id="duration"
-                                type="number"
-                                className="input"
-                                min={7}
-                                max={90}
-                                value={durationDays}
-                                onChange={(e) => setDurationDays(parseInt(e.target.value))}
-                                required
-                            />
+                    {step === 2 && (
+                        <div className="step-content">
+                            <div className="input-group">
+                                <label className="input-label">Current Skill Level (Optional)</label>
+                                <p className="input-hint">The AI will assess this if you skip</p>
+                                <div className="skill-options">
+                                    {[
+                                        { value: '', label: 'Let AI assess' },
+                                        { value: 'beginner', label: 'Beginner' },
+                                        { value: 'intermediate', label: 'Intermediate' },
+                                        { value: 'advanced', label: 'Advanced' },
+                                    ].map((option) => (
+                                        <button
+                                            key={option.value}
+                                            type="button"
+                                            className={`skill-btn ${skillLevel === option.value ? 'selected' : ''}`}
+                                            onClick={() => setSkillLevel(option.value)}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">How often will you work on this?</label>
+                                <div className="cadence-options">
+                                    {[
+                                        { value: 'daily', label: 'Daily', desc: '7 days/week' },
+                                        { value: '3x_week', label: '3x per week', desc: 'Flexible days' },
+                                        { value: 'weekdays', label: 'Weekdays only', desc: 'Mon-Fri' },
+                                        { value: 'weekly', label: 'Weekly', desc: 'Once per week' },
+                                    ].map((option) => (
+                                        <button
+                                            key={option.value}
+                                            type="button"
+                                            className={`cadence-btn ${cadence === option.value ? 'selected' : ''}`}
+                                            onClick={() => setCadence(option.value)}
+                                        >
+                                            <span className="cadence-label">{option.label}</span>
+                                            <span className="cadence-desc">{option.desc}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    <div className="modal-actions">
-                        <button type="button" onClick={onClose} className="btn btn-secondary">
-                            Cancel
+                    {step === 3 && (
+                        <div className="step-content">
+                            <div className="input-group">
+                                <label className="input-label">What resources are you using? (Optional)</label>
+                                <p className="input-hint">Book titles, course URLs, YouTube channels you follow</p>
+
+                                <div className="source-input-row">
+                                    <select
+                                        className="input source-type-select"
+                                        value={newSourceType}
+                                        onChange={(e) => setNewSourceType(e.target.value)}
+                                    >
+                                        <option value="book">Book</option>
+                                        <option value="url">Course/URL</option>
+                                        <option value="youtube">YouTube Channel</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                    <input
+                                        className="input source-value-input"
+                                        placeholder={newSourceType === 'book' ? 'Book title' : 'URL or name'}
+                                        value={newSourceValue}
+                                        onChange={(e) => setNewSourceValue(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && addSource()}
+                                    />
+                                    <button type="button" className="btn btn-secondary" onClick={addSource}>
+                                        <Plus size={18} />
+                                    </button>
+                                </div>
+
+                                {sources.length > 0 && (
+                                    <div className="sources-list">
+                                        {sources.map((source, i) => (
+                                            <div key={i} className="source-item">
+                                                <span className="source-type">{source.type}</span>
+                                                <span className="source-value">{source.title || source.value}</span>
+                                                <button type="button" className="source-remove" onClick={() => removeSource(i)}>
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <button
+                                    type="button"
+                                    className={`skip-sources-btn ${sources.length === 0 ? 'visible' : ''}`}
+                                    onClick={() => { }}
+                                >
+                                    <span>I'll figure it out as I go</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="modal-actions">
+                    {step > 1 && (
+                        <button type="button" onClick={() => setStep(step - 1)} className="btn btn-secondary">
+                            Back
                         </button>
-                        <button type="submit" className="btn btn-primary" disabled={loading}>
+                    )}
+
+                    {step < 3 ? (
+                        <button
+                            type="button"
+                            onClick={() => setStep(step + 1)}
+                            className="btn btn-primary"
+                            disabled={step === 1 && goalStatement.length < 10}
+                        >
+                            Continue
+                            <ChevronRight size={18} />
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={handleSubmit}
+                            className="btn btn-primary"
+                            disabled={loading}
+                        >
                             {loading ? (
                                 <>
                                     <Loader2 className="animate-spin" size={18} />
@@ -292,8 +439,8 @@ function CreateResolutionModal({ onClose, onCreated }) {
                                 </>
                             )}
                         </button>
-                    </div>
-                </form>
+                    )}
+                </div>
             </div>
         </div>
     )

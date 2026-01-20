@@ -1,245 +1,255 @@
-from datetime import datetime
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime, timedelta
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.db import get_db, User, Resolution, Syllabus, DailySession
+from app.db import get_db, Resolution, Milestone, Streak
 from app.core import get_current_user
-from app.schemas import ResolutionCreate, ResolutionResponse, SyllabusResponse, SyllabusDay
-from app.services import process_pdf, process_epub, process_text
-from app.agents import generate_syllabus
-from app.observability import evaluate_syllabus_coherence
+from app.schemas import (
+    ResolutionCreate,
+    ResolutionResponse,
+    RoadmapResponse,
+    MilestoneResponse,
+    MilestoneUpdate,
+)
+from app.agents import generate_roadmap
 
-router = APIRouter(prefix="/resolutions", tags=["Resolutions"])
+
+router = APIRouter(prefix="/resolutions", tags=["resolutions"])
 
 
 @router.post("", response_model=ResolutionResponse, status_code=status.HTTP_201_CREATED)
 async def create_resolution(
-    resolution_data: ResolutionCreate,
+    data: ResolutionCreate,
+    user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
-    new_resolution = Resolution(
-        user_id=current_user.id,
-        title=resolution_data.title,
-        description=resolution_data.description,
-        goal_statement=resolution_data.goal_statement,
-        daily_time_minutes=resolution_data.daily_time_minutes,
-        duration_days=resolution_data.duration_days,
+    resolution = Resolution(
+        user_id=user["id"],
+        goal_statement=data.goal_statement,
+        category=data.category.value,
+        skill_level=data.skill_level.value if data.skill_level else None,
+        cadence=data.cadence.value,
+        learning_sources=[s.model_dump() for s in data.learning_sources],
     )
     
-    db.add(new_resolution)
+    db.add(resolution)
     await db.commit()
-    await db.refresh(new_resolution)
+    await db.refresh(resolution)
     
-    return ResolutionResponse.model_validate(new_resolution)
+    streak = Streak(resolution_id=resolution.id)
+    db.add(streak)
+    await db.commit()
+    
+    return resolution
 
 
 @router.get("", response_model=list[ResolutionResponse])
 async def list_resolutions(
+    user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(Resolution)
-        .where(Resolution.user_id == current_user.id)
+        .where(Resolution.user_id == user["id"])
         .order_by(Resolution.created_at.desc())
     )
-    resolutions = result.scalars().all()
-    return [ResolutionResponse.model_validate(r) for r in resolutions]
+    return result.scalars().all()
 
 
 @router.get("/{resolution_id}", response_model=ResolutionResponse)
 async def get_resolution(
     resolution_id: int,
+    user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(Resolution)
-        .where(Resolution.id == resolution_id, Resolution.user_id == current_user.id)
+        .where(Resolution.id == resolution_id, Resolution.user_id == user["id"])
     )
     resolution = result.scalar_one_or_none()
     
     if not resolution:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resolution not found")
+        raise HTTPException(status_code=404, detail="Resolution not found")
     
-    return ResolutionResponse.model_validate(resolution)
+    return resolution
 
 
-@router.post("/{resolution_id}/upload")
-async def upload_content(
+@router.post("/{resolution_id}/generate-roadmap", response_model=RoadmapResponse)
+async def generate_resolution_roadmap(
     resolution_id: int,
-    background_tasks: BackgroundTasks,
-    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(Resolution)
-        .where(Resolution.id == resolution_id, Resolution.user_id == current_user.id)
+        .options(selectinload(Resolution.milestones))
+        .where(Resolution.id == resolution_id, Resolution.user_id == user["id"])
     )
     resolution = result.scalar_one_or_none()
     
     if not resolution:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resolution not found")
+        raise HTTPException(status_code=404, detail="Resolution not found")
     
-    content = await file.read()
-    filename = file.filename or "unknown"
+    if resolution.milestones:
+        for milestone in resolution.milestones:
+            await db.delete(milestone)
     
-    if filename.lower().endswith(".pdf"):
-        process_result = await process_pdf(content, resolution_id)
-    elif filename.lower().endswith(".epub"):
-        process_result = await process_epub(content, resolution_id)
-    elif filename.lower().endswith(".txt") or filename.lower().endswith(".md"):
-        text_content = content.decode("utf-8")
-        process_result = await process_text(text_content, resolution_id, source=filename)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Unsupported file type. Please upload PDF, EPUB, TXT, or MD files.",
-        )
-    
-    return {
-        "message": "Content uploaded and processed successfully",
-        "filename": filename,
-        "processing_result": process_result,
-    }
-
-
-@router.post("/{resolution_id}/generate-syllabus", response_model=SyllabusResponse)
-async def generate_resolution_syllabus(
-    resolution_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    result = await db.execute(
-        select(Resolution)
-        .options(selectinload(Resolution.syllabus))
-        .where(Resolution.id == resolution_id, Resolution.user_id == current_user.id)
-    )
-    resolution = result.scalar_one_or_none()
-    
-    if not resolution:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resolution not found")
-    
-    syllabus_content = await generate_syllabus(
+    roadmap_data = await generate_roadmap(
         goal_statement=resolution.goal_statement,
-        resolution_id=resolution_id,
-        duration_days=resolution.duration_days,
-        daily_minutes=resolution.daily_time_minutes,
+        category=resolution.category,
+        skill_level=resolution.skill_level,
+        cadence=resolution.cadence,
+        learning_sources=resolution.learning_sources,
     )
     
-    await evaluate_syllabus_coherence(syllabus_content)
+    today = datetime.utcnow().date()
+    milestones = []
     
-    if resolution.syllabus:
-        resolution.syllabus.content = syllabus_content
-        resolution.syllabus.total_days = syllabus_content.get("total_days", resolution.duration_days)
-        resolution.syllabus.last_adapted_at = datetime.utcnow()
-    else:
-        new_syllabus = Syllabus(
-            resolution_id=resolution_id,
-            content=syllabus_content,
-            total_days=syllabus_content.get("total_days", resolution.duration_days),
+    for m in roadmap_data.get("milestones", []):
+        weeks_offset = sum(
+            rm.get("estimated_weeks", 2) 
+            for rm in roadmap_data.get("milestones", [])[:m.get("order", 1) - 1]
         )
-        db.add(new_syllabus)
+        target_date = today + timedelta(weeks=weeks_offset + m.get("estimated_weeks", 2))
+        
+        milestone = Milestone(
+            resolution_id=resolution.id,
+            order=m.get("order", 1),
+            title=m.get("title", "Milestone"),
+            description=m.get("description", ""),
+            verification_criteria=m.get("verification_criteria", "Demonstrate understanding"),
+            target_date=target_date,
+        )
+        db.add(milestone)
+        milestones.append(milestone)
+    
+    if roadmap_data.get("skill_assessment") and not resolution.skill_level:
+        resolution.skill_level = roadmap_data.get("skill_assessment")
+    
+    resolution.roadmap_generated = True
+    resolution.roadmap_needs_refresh = False
     
     await db.commit()
     
-    result = await db.execute(
-        select(Syllabus).where(Syllabus.resolution_id == resolution_id)
-    )
-    syllabus = result.scalar_one()
+    for m in milestones:
+        await db.refresh(m)
     
-    await _create_daily_sessions(db, resolution, syllabus_content)
-    
-    days = [
-        SyllabusDay(
-            day=d.get("day", i + 1),
-            title=d.get("title", f"Day {i + 1}"),
-            description=d.get("description", ""),
-            concepts=d.get("concepts", []),
-            estimated_minutes=d.get("estimated_minutes", resolution.daily_time_minutes),
-        )
-        for i, d in enumerate(syllabus_content.get("days", []))
-    ]
-    
-    return SyllabusResponse(
-        id=syllabus.id,
-        resolution_id=resolution_id,
-        total_days=syllabus.total_days,
-        days=days,
-        generated_at=syllabus.generated_at,
+    return RoadmapResponse(
+        resolution_id=resolution.id,
+        milestones=[MilestoneResponse.model_validate(m) for m in milestones],
+        needs_refresh=False,
     )
 
 
-@router.get("/{resolution_id}/syllabus", response_model=SyllabusResponse)
-async def get_syllabus(
+@router.get("/{resolution_id}/roadmap", response_model=RoadmapResponse)
+async def get_roadmap(
     resolution_id: int,
+    user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(Syllabus)
+        select(Resolution)
+        .options(selectinload(Resolution.milestones))
+        .where(Resolution.id == resolution_id, Resolution.user_id == user["id"])
+    )
+    resolution = result.scalar_one_or_none()
+    
+    if not resolution:
+        raise HTTPException(status_code=404, detail="Resolution not found")
+    
+    if not resolution.milestones:
+        raise HTTPException(status_code=404, detail="Roadmap not generated yet")
+    
+    sorted_milestones = sorted(resolution.milestones, key=lambda m: m.order)
+    
+    return RoadmapResponse(
+        resolution_id=resolution.id,
+        milestones=[MilestoneResponse.model_validate(m) for m in sorted_milestones],
+        needs_refresh=resolution.roadmap_needs_refresh,
+    )
+
+
+@router.put("/milestones/{milestone_id}", response_model=MilestoneResponse)
+async def update_milestone(
+    milestone_id: int,
+    data: MilestoneUpdate,
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Milestone)
         .join(Resolution)
-        .where(Syllabus.resolution_id == resolution_id, Resolution.user_id == current_user.id)
+        .where(Milestone.id == milestone_id, Resolution.user_id == user["id"])
     )
-    syllabus = result.scalar_one_or_none()
+    milestone = result.scalar_one_or_none()
     
-    if not syllabus:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Syllabus not found")
+    if not milestone:
+        raise HTTPException(status_code=404, detail="Milestone not found")
     
-    result = await db.execute(
-        select(Resolution).where(Resolution.id == resolution_id)
+    if data.title is not None:
+        milestone.title = data.title
+    if data.description is not None:
+        milestone.description = data.description
+    if data.verification_criteria is not None:
+        milestone.verification_criteria = data.verification_criteria
+    if data.target_date is not None:
+        milestone.target_date = data.target_date
+    
+    milestone.is_edited = True
+    
+    resolution_result = await db.execute(
+        select(Resolution).where(Resolution.id == milestone.resolution_id)
     )
-    resolution = result.scalar_one()
-    
-    syllabus_content = syllabus.content or {}
-    days = [
-        SyllabusDay(
-            day=d.get("day", i + 1),
-            title=d.get("title", f"Day {i + 1}"),
-            description=d.get("description", ""),
-            concepts=d.get("concepts", []),
-            estimated_minutes=d.get("estimated_minutes", resolution.daily_time_minutes),
-        )
-        for i, d in enumerate(syllabus_content.get("days", []))
-    ]
-    
-    return SyllabusResponse(
-        id=syllabus.id,
-        resolution_id=resolution_id,
-        total_days=syllabus.total_days,
-        days=days,
-        generated_at=syllabus.generated_at,
-    )
-
-
-async def _create_daily_sessions(
-    db: AsyncSession,
-    resolution: Resolution,
-    syllabus_content: dict,
-) -> None:
-    result = await db.execute(
-        select(DailySession).where(DailySession.resolution_id == resolution.id)
-    )
-    existing_sessions = result.scalars().all()
-    
-    for session in existing_sessions:
-        await db.delete(session)
-    
-    days = syllabus_content.get("days", [])
-    for day_data in days:
-        session = DailySession(
-            resolution_id=resolution.id,
-            day_number=day_data.get("day", 1),
-            title=day_data.get("title", "Learning Session"),
-            content=day_data.get("description", ""),
-            summary=day_data.get("description", "")[:500],
-            concepts=day_data.get("concepts", []),
-        )
-        db.add(session)
+    resolution = resolution_result.scalar_one()
+    resolution.roadmap_needs_refresh = True
     
     await db.commit()
+    await db.refresh(milestone)
+    
+    return milestone
+
+
+@router.post("/milestones/{milestone_id}/complete", response_model=MilestoneResponse)
+async def complete_milestone(
+    milestone_id: int,
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Milestone)
+        .join(Resolution)
+        .where(Milestone.id == milestone_id, Resolution.user_id == user["id"])
+    )
+    milestone = result.scalar_one_or_none()
+    
+    if not milestone:
+        raise HTTPException(status_code=404, detail="Milestone not found")
+    
+    milestone.status = "completed"
+    milestone.completed_at = datetime.utcnow()
+    
+    resolution_result = await db.execute(
+        select(Resolution)
+        .options(selectinload(Resolution.milestones))
+        .where(Resolution.id == milestone.resolution_id)
+    )
+    resolution = resolution_result.scalar_one()
+    
+    next_milestone = min(
+        (m for m in resolution.milestones if m.status == "pending"),
+        key=lambda m: m.order,
+        default=None,
+    )
+    
+    if next_milestone:
+        next_milestone.status = "in_progress"
+        resolution.current_milestone = next_milestone.order
+    else:
+        resolution.status = "completed"
+    
+    await db.commit()
+    await db.refresh(milestone)
+    
+    return milestone

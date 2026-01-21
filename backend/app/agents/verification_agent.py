@@ -70,7 +70,7 @@ If you can't determine specific content, use open-ended teach-back questions."""
 
     try:
         response = await client.aio.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash-lite",
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=VERIFICATION_SYSTEM_PROMPT,
@@ -95,7 +95,7 @@ async def _search_for_context(content: str, source: str) -> str | None:
     
     try:
         response = await client.aio.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash-lite",
             contents=search_query,
             config=types.GenerateContentConfig(
                 tools=[types.Tool(google_search=types.GoogleSearch())],
@@ -202,7 +202,7 @@ Pass threshold is 60% overall score."""
 
     try:
         response = await client.aio.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash-lite",
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=GRADING_SYSTEM_PROMPT,

@@ -60,7 +60,7 @@ Provide recovery strategies and next steps."""
 
     try:
         response = await client.aio.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash-lite",
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=RECOVERY_SYSTEM_PROMPT,
@@ -132,7 +132,7 @@ Create a thoughtful reflection prompt for this specific week."""
 
     try:
         response = await client.aio.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash-lite",
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=REFLECTION_SYSTEM_PROMPT,

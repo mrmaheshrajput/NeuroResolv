@@ -89,7 +89,7 @@ Each milestone should have clear, demonstrable verification criteria."""
 
     try:
         response = await client.aio.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash-lite",
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=ROADMAP_SYSTEM_PROMPT,
@@ -161,7 +161,7 @@ Return JSON with: {{"refined_title": "...", "refined_description": "...", "refin
 
     try:
         response = await client.aio.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash-lite",
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.5,

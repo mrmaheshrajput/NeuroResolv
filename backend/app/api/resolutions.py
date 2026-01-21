@@ -26,7 +26,7 @@ async def create_resolution(
     db: AsyncSession = Depends(get_db),
 ):
     resolution = Resolution(
-        user_id=user["id"],
+        user_id=user.id,
         goal_statement=data.goal_statement,
         category=data.category.value,
         skill_level=data.skill_level.value if data.skill_level else None,
@@ -52,7 +52,7 @@ async def list_resolutions(
 ):
     result = await db.execute(
         select(Resolution)
-        .where(Resolution.user_id == user["id"])
+        .where(Resolution.user_id == user.id)
         .order_by(Resolution.created_at.desc())
     )
     return result.scalars().all()
@@ -66,7 +66,7 @@ async def get_resolution(
 ):
     result = await db.execute(
         select(Resolution)
-        .where(Resolution.id == resolution_id, Resolution.user_id == user["id"])
+        .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
     )
     resolution = result.scalar_one_or_none()
     
@@ -85,7 +85,7 @@ async def generate_resolution_roadmap(
     result = await db.execute(
         select(Resolution)
         .options(selectinload(Resolution.milestones))
-        .where(Resolution.id == resolution_id, Resolution.user_id == user["id"])
+        .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
     )
     resolution = result.scalar_one_or_none()
     
@@ -152,7 +152,7 @@ async def get_roadmap(
     result = await db.execute(
         select(Resolution)
         .options(selectinload(Resolution.milestones))
-        .where(Resolution.id == resolution_id, Resolution.user_id == user["id"])
+        .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
     )
     resolution = result.scalar_one_or_none()
     
@@ -181,7 +181,7 @@ async def update_milestone(
     result = await db.execute(
         select(Milestone)
         .join(Resolution)
-        .where(Milestone.id == milestone_id, Resolution.user_id == user["id"])
+        .where(Milestone.id == milestone_id, Resolution.user_id == user.id)
     )
     milestone = result.scalar_one_or_none()
     
@@ -220,7 +220,7 @@ async def complete_milestone(
     result = await db.execute(
         select(Milestone)
         .join(Resolution)
-        .where(Milestone.id == milestone_id, Resolution.user_id == user["id"])
+        .where(Milestone.id == milestone_id, Resolution.user_id == user.id)
     )
     milestone = result.scalar_one_or_none()
     

@@ -54,7 +54,7 @@ async def log_progress(
     result = await db.execute(
         select(Resolution)
         .options(selectinload(Resolution.streak))
-        .where(Resolution.id == resolution_id, Resolution.user_id == user["id"])
+        .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
     )
     resolution = result.scalar_one_or_none()
     
@@ -107,7 +107,7 @@ async def get_today_progress(
 ):
     result = await db.execute(
         select(Resolution)
-        .where(Resolution.id == resolution_id, Resolution.user_id == user["id"])
+        .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
     )
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Resolution not found")
@@ -130,7 +130,7 @@ async def generate_progress_verification(
         select(ProgressLog)
         .options(selectinload(ProgressLog.verification_quiz))
         .join(Resolution)
-        .where(ProgressLog.id == log_id, Resolution.user_id == user["id"])
+        .where(ProgressLog.id == log_id, Resolution.user_id == user.id)
     )
     progress_log = result.scalar_one_or_none()
     
@@ -207,7 +207,7 @@ async def submit_verification_quiz(
         select(VerificationQuiz)
         .join(ProgressLog)
         .join(Resolution)
-        .where(VerificationQuiz.id == quiz_id, Resolution.user_id == user["id"])
+        .where(VerificationQuiz.id == quiz_id, Resolution.user_id == user.id)
     )
     quiz = result.scalar_one_or_none()
     
@@ -295,7 +295,7 @@ async def get_progress_history(
 ):
     result = await db.execute(
         select(Resolution)
-        .where(Resolution.id == resolution_id, Resolution.user_id == user["id"])
+        .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
     )
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Resolution not found")
@@ -321,7 +321,7 @@ async def get_progress_overview(
             selectinload(Resolution.milestones),
             selectinload(Resolution.streak),
         )
-        .where(Resolution.id == resolution_id, Resolution.user_id == user["id"])
+        .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
     )
     resolution = result.scalar_one_or_none()
     
@@ -364,7 +364,7 @@ async def get_streak(
     result = await db.execute(
         select(Streak)
         .join(Resolution)
-        .where(Streak.resolution_id == resolution_id, Resolution.user_id == user["id"])
+        .where(Streak.resolution_id == resolution_id, Resolution.user_id == user.id)
     )
     streak = result.scalar_one_or_none()
     

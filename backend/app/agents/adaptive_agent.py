@@ -88,7 +88,7 @@ Provide recovery strategies and next steps."""
         }
 
 
-REFLECTION_SYSTEM_PROMPT = """You are a thoughtful learning coach who generates weekly reflection prompts.
+REFLECTION_SYSTEM_PROMPT = """You are a thoughtful learning coach, who generates weekly reflection prompts.
 
 Create prompts that help learners:
 1. Celebrate their progress

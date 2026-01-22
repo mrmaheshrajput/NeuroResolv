@@ -145,14 +145,19 @@
     color: var(--gray-100);
 }
 
-.source-input-row {
+.source-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.source-value-row {
     display: flex;
     gap: var(--space-2);
 }
 
 .source-type-select {
-    width: 140px;
-    flex-shrink: 0;
+    width: 100%;
 }
 
 .source-value-input {
@@ -222,6 +227,12 @@
 .skip-sources-btn:hover {
     border-color: var(--gray-500);
     color: var(--gray-200);
+}
+
+.skip-sources-btn.selected {
+    border-color: var(--primary-500);
+    background: rgba(139, 92, 246, 0.1);
+    color: var(--gray-100);
 }
 
 .resolution-info {

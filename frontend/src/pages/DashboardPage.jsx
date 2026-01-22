@@ -202,6 +202,7 @@ function CreateResolutionModal({ onClose, onCreated }) {
     const [sources, setSources] = useState([])
     const [newSourceType, setNewSourceType] = useState('book')
     const [newSourceValue, setNewSourceValue] = useState('')
+    const [skipResources, setSkipResources] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
 
@@ -354,7 +355,7 @@ function CreateResolutionModal({ onClose, onCreated }) {
                                 <label className="input-label">What resources are you using? (Optional)</label>
                                 <p className="input-hint">Book titles, course URLs, YouTube channels you follow</p>
 
-                                <div className="source-input-row">
+                                <div className="source-input-group">
                                     <select
                                         className="input source-type-select"
                                         value={newSourceType}
@@ -365,16 +366,18 @@ function CreateResolutionModal({ onClose, onCreated }) {
                                         <option value="youtube">YouTube Channel</option>
                                         <option value="other">Other</option>
                                     </select>
-                                    <input
-                                        className="input source-value-input"
-                                        placeholder={newSourceType === 'book' ? 'Book title' : 'URL or name'}
-                                        value={newSourceValue}
-                                        onChange={(e) => setNewSourceValue(e.target.value)}
-                                        onKeyPress={(e) => e.key === 'Enter' && addSource()}
-                                    />
-                                    <button type="button" className="btn btn-secondary" onClick={addSource}>
-                                        <Plus size={18} />
-                                    </button>
+                                    <div className="source-value-row">
+                                        <input
+                                            className="input source-value-input"
+                                            placeholder={newSourceType === 'book' ? 'Book title' : 'URL or name'}
+                                            value={newSourceValue}
+                                            onChange={(e) => setNewSourceValue(e.target.value)}
+                                            onKeyPress={(e) => e.key === 'Enter' && addSource()}
+                                        />
+                                        <button type="button" className="btn btn-secondary" onClick={addSource}>
+                                            <Plus size={18} />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {sources.length > 0 && (
@@ -393,8 +396,8 @@ function CreateResolutionModal({ onClose, onCreated }) {
 
                                 <button
                                     type="button"
-                                    className={`skip-sources-btn ${sources.length === 0 ? 'visible' : ''}`}
-                                    onClick={() => { }}
+                                    className={`skip-sources-btn ${sources.length === 0 ? 'visible' : ''} ${skipResources ? 'selected' : ''}`}
+                                    onClick={() => setSkipResources(!skipResources)}
                                 >
                                     <span>I'll figure it out as I go</span>
                                 </button>

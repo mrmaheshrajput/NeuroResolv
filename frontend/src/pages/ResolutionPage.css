@@ -41,38 +41,125 @@
 .resolution-hero {
     display: flex;
     align-items: flex-start;
+    justify-content: space-between;
     gap: var(--space-6);
     margin-bottom: var(--space-8);
 }
 
-.hero-icon {
-    width: 72px;
-    height: 72px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--gradient-primary);
-    border-radius: var(--radius-xl);
-    flex-shrink: 0;
+.hero-content {
+    flex: 1;
 }
 
-.hero-icon svg {
-    color: white;
+.goal-category {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.category-badge,
+.cadence-badge,
+.skill-badge {
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.category-badge {
+    background: rgba(139, 92, 246, 0.2);
+    color: var(--primary-400);
+}
+
+.cadence-badge {
+    background: var(--dark-surface-2);
+    color: var(--gray-400);
+}
+
+.skill-badge {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--accent-emerald);
 }
 
 .hero-content h1 {
     font-size: 2rem;
-    margin-bottom: var(--space-2);
+    line-height: 1.3;
 }
 
-.hero-content p {
-    font-size: 1.125rem;
-    color: var(--gray-300);
+.streak-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-6);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(236, 72, 153, 0.2));
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-xl);
+    flex-shrink: 0;
 }
 
-.stats-grid {
+.streak-icon {
+    color: var(--accent-orange);
+}
+
+.streak-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.streak-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent-orange);
+    line-height: 1;
+}
+
+.streak-label {
+    font-size: 0.8125rem;
+    color: var(--gray-400);
+}
+
+.generate-section {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-12) 0;
+}
+
+.generate-card {
+    max-width: 480px;
+    text-align: center;
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: var(--radius-2xl);
+    padding: var(--space-10);
+}
+
+.generate-icon {
+    width: 96px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gradient-primary);
+    border-radius: 50%;
+    margin: 0 auto var(--space-6);
+}
+
+.generate-icon svg {
+    color: white;
+}
+
+.generate-card h2 {
+    margin-bottom: var(--space-3);
+}
+
+.generate-card p {
+    color: var(--gray-400);
+    margin-bottom: var(--space-6);
+}
+
+.stats-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--space-4);
     margin-bottom: var(--space-6);
 }
@@ -91,14 +178,14 @@
     color: var(--primary-400);
 }
 
-.stat-content {
+.stat-info {
     display: flex;
     flex-direction: column;
 }
 
 .stat-value {
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: 1.5rem;
+    font-weight: 700;
     color: var(--gray-100);
 }
 
@@ -107,201 +194,198 @@
     color: var(--gray-500);
 }
 
-.main-progress {
+.daily-action-section {
     margin-bottom: var(--space-8);
 }
 
-.progress-header {
+.daily-checkin-btn {
     display: flex;
+    align-items: center;
     justify-content: space-between;
+    width: 100%;
+    padding: var(--space-6);
+    background: var(--gradient-primary);
+    border-radius: var(--radius-xl);
+    color: white;
+    text-decoration: none;
+    box-shadow: var(--shadow-glow);
+    animation: glow 2s ease-in-out infinite;
+}
+
+.checkin-content {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.checkin-text h3 {
+    font-size: 1.25rem;
+    margin-bottom: var(--space-1);
+}
+
+.checkin-text p {
+    font-size: 0.9375rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.today-logged-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: var(--radius-xl);
+}
+
+.logged-icon {
+    color: var(--accent-emerald);
+    flex-shrink: 0;
+}
+
+.logged-content h3 {
+    font-size: 1rem;
     margin-bottom: var(--space-2);
-    font-size: 0.875rem;
+    color: var(--accent-emerald);
+}
+
+.logged-content p {
     color: var(--gray-400);
+    font-size: 0.9375rem;
+    margin-bottom: var(--space-3);
 }
 
-.progress-bar.large {
-    height: 12px;
+.refresh-notice {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-6);
 }
 
-.setup-section {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--space-6);
-    margin-bottom: var(--space-8);
+.refresh-notice svg {
+    color: var(--accent-orange);
+    flex-shrink: 0;
 }
 
-.setup-card {
+.refresh-notice span {
+    flex: 1;
+    color: var(--accent-orange);
+    font-size: 0.9375rem;
+}
+
+.roadmap-section {
+    margin-top: var(--space-8);
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-6);
+}
+
+.section-header h2 {
+    font-size: 1.5rem;
+}
+
+.milestones-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.milestone-card {
+    display: flex;
+    gap: var(--space-4);
+    padding: var(--space-5);
     background: var(--dark-surface);
     border: 1px solid var(--dark-border);
     border-radius: var(--radius-xl);
-    padding: var(--space-8);
-    text-align: center;
+    transition: all var(--transition-fast);
 }
 
-.setup-icon {
-    width: 64px;
-    height: 64px;
+.milestone-card:hover {
+    border-color: var(--gray-600);
+}
+
+.milestone-card.completed {
+    opacity: 0.7;
+}
+
+.milestone-card.completed .milestone-number svg {
+    color: var(--accent-emerald);
+}
+
+.milestone-card.in_progress {
+    border-color: var(--primary-500);
+    background: rgba(139, 92, 246, 0.05);
+}
+
+.milestone-card.in_progress .milestone-number {
+    background: var(--gradient-primary);
+    color: white;
+}
+
+.milestone-number {
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--dark-surface-2);
     border-radius: 50%;
-    margin: 0 auto var(--space-4);
-}
-
-.setup-icon svg {
-    color: var(--primary-400);
-}
-
-.setup-card h3 {
-    margin-bottom: var(--space-2);
-}
-
-.setup-card p {
+    font-weight: 700;
     color: var(--gray-400);
-    margin-bottom: var(--space-4);
-}
-
-.action-section {
-    margin-bottom: var(--space-8);
-}
-
-.start-btn {
-    width: 100%;
-    padding: var(--space-5) var(--space-8);
-    font-size: 1.125rem;
-    animation: glow 2s ease-in-out infinite;
-}
-
-.weak-areas-section {
-    background: rgba(244, 63, 94, 0.1);
-    border: 1px solid rgba(244, 63, 94, 0.3);
-    border-radius: var(--radius-xl);
-    padding: var(--space-6);
-    margin-bottom: var(--space-8);
-}
-
-.weak-areas-section h2 {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    font-size: 1.125rem;
-    color: var(--accent-rose);
-    margin-bottom: var(--space-4);
-}
-
-.weak-concepts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-}
-
-.concept-chip {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    background: var(--dark-surface);
-    border-radius: var(--radius-full);
-    font-size: 0.875rem;
-}
-
-.concept-name {
-    color: var(--gray-200);
-}
-
-.concept-score {
-    color: var(--accent-rose);
-    font-weight: 500;
-}
-
-.syllabus-section h2 {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    font-size: 1.5rem;
-    margin-bottom: var(--space-6);
-}
-
-.syllabus-days {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-}
-
-.syllabus-day {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-4);
-    padding: var(--space-4);
-    background: var(--dark-surface);
-    border: 1px solid var(--dark-border);
-    border-radius: var(--radius-lg);
-    transition: all var(--transition-fast);
-}
-
-.syllabus-day:hover {
-    border-color: var(--gray-600);
-}
-
-.syllabus-day.completed {
-    opacity: 0.6;
-}
-
-.syllabus-day.completed .day-number svg {
-    color: var(--accent-emerald);
-}
-
-.syllabus-day.current {
-    border-color: var(--primary-500);
-    background: rgba(139, 92, 246, 0.1);
-}
-
-.day-number {
-    width: 60px;
     flex-shrink: 0;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--gray-400);
 }
 
-.day-content {
+.milestone-content {
     flex: 1;
 }
 
-.day-content h4 {
-    font-size: 1rem;
-    margin-bottom: var(--space-1);
-    color: var(--gray-100);
-}
-
-.day-content p {
-    font-size: 0.875rem;
-    color: var(--gray-400);
+.milestone-content h3 {
+    font-size: 1.125rem;
     margin-bottom: var(--space-2);
 }
 
-.day-concepts {
+.milestone-content>p {
+    color: var(--gray-400);
+    font-size: 0.9375rem;
+    margin-bottom: var(--space-3);
+}
+
+.milestone-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-1);
+    gap: var(--space-4);
 }
 
-.concept-tag {
-    padding: var(--space-1) var(--space-2);
-    background: var(--dark-surface-2);
-    border-radius: var(--radius-sm);
-    font-size: 0.75rem;
-    color: var(--gray-400);
-}
-
-.day-time {
+.verification-label,
+.target-date {
     display: flex;
     align-items: center;
-    gap: var(--space-1);
+    gap: var(--space-2);
     font-size: 0.8125rem;
     color: var(--gray-500);
-    flex-shrink: 0;
+}
+
+.verification-label svg,
+.target-date svg {
+    color: var(--gray-600);
+}
+
+.edited-badge {
+    display: inline-block;
+    margin-top: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    background: rgba(245, 158, 11, 0.2);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    color: var(--accent-orange);
 }
 
 @media (max-width: 768px) {
@@ -309,15 +393,11 @@
         flex-direction: column;
     }
 
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
+    .stats-row {
+        grid-template-columns: 1fr;
     }
 
-    .syllabus-day {
+    .milestone-card {
         flex-direction: column;
-    }
-
-    .day-number {
-        width: auto;
     }
 }

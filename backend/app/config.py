@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 1440
     
     google_api_key: str = "sample-gemini-api-key"
+    openai_api_key: str = "sample-openai-api-key"
     
     opik_api_key: str = "sample-opik-api-key"
     opik_workspace: str = "default"

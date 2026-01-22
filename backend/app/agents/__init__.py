@@ -1,14 +1,18 @@
-from app.agents.syllabus_agent import generate_syllabus
-from app.agents.quiz_agent import generate_quiz, grade_short_answer
+from app.agents.roadmap_agent import generate_roadmap, refine_milestone
+from app.agents.verification_agent import (
+    generate_verification_quiz,
+    grade_verification_quiz,
+)
 from app.agents.adaptive_agent import (
-    adapt_learning_path,
-    generate_reinforcement_content,
+    analyze_failure_and_suggest_recovery,
+    generate_weekly_reflection_prompt,
 )
 
 __all__ = [
-    "generate_syllabus",
-    "generate_quiz",
-    "grade_short_answer",
-    "adapt_learning_path",
-    "generate_reinforcement_content",
+    "generate_roadmap",
+    "refine_milestone",
+    "generate_verification_quiz",
+    "grade_verification_quiz",
+    "analyze_failure_and_suggest_recovery",
+    "generate_weekly_reflection_prompt",
 ]

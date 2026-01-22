@@ -1,294 +1,156 @@
 import json
-import os
-from typing import Optional
-from google.adk.agents import Agent
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
+from google import genai
 from google.genai import types
 
 from app.config import get_settings
-from app.services import query_collection
-from app.observability import track_llm_call, log_adaptive_decision
+from app.observability import track_llm_call
+
 
 settings = get_settings()
+client = genai.Client(api_key=settings.google_api_key)
 
-os.environ["GOOGLE_API_KEY"] = settings.google_api_key
 
+RECOVERY_SYSTEM_PROMPT = """You are an expert learning coach who helps learners recover from failed quizzes.
 
-def create_adaptive_agent() -> Agent:
-    return Agent(
-        name="adaptive_tutor",
-        model="gemini-flash-lite-latest",
-        description="Adapts learning paths based on quiz performance and concept mastery",
-        instruction="""You are an expert adaptive learning specialist. Your role is to analyze 
-student performance and adapt their learning path to reinforce weak areas.
+When a learner fails a verification quiz, you:
+1. Analyze what concepts they struggled with
+2. Suggest specific review strategies
+3. Recommend adjusted approaches for the next session
+4. Provide encouragement while being honest about gaps
 
-When a student fails a quiz or shows weakness in specific concepts:
-1. Identify the exact concepts that need reinforcement
-2. Design targeted review materials
-3. Suggest modifications to the upcoming sessions
-4. Create a reinforcement plan that integrates with the existing syllabus
-
-Key Principles:
-- Don't just repeat content; approach weak concepts from different angles
-- Build connections between weak and strong concepts
-- Provide encouragement while being honest about areas needing work
-- Keep the learning engaging, not punishment-like
-
-Output Format (JSON):
+Return JSON:
 {
-    "adaptation_type": "reinforcement|review|restructure",
-    "weak_concepts": ["concept1", "concept2"],
-    "reinforcement_content": {
-        "title": "Review Session Title",
-        "description": "What this review covers",
-        "approach": "Different angle to teach the concept",
-        "activities": ["activity1", "activity2"],
-        "estimated_minutes": 20
-    },
-    "syllabus_modifications": [
-        {
-            "day": 5,
-            "modification": "Add 10 minutes for concept review",
-            "reason": "Student showed weakness in prerequisite"
-        }
-    ],
-    "encouragement_message": "Personalized encouraging message",
-    "study_tips": ["tip1", "tip2"]
-}""",
-        tools=[retrieve_weak_concept_content],
-    )
+  "analysis": "What went wrong and why",
+  "weak_concepts": ["concept1", "concept2"],
+  "review_strategies": [
+    {
+      "concept": "concept name",
+      "strategy": "How to review this",
+      "resources": "Suggested resources or approaches"
+    }
+  ],
+  "next_session_focus": "What to focus on next time",
+  "encouragement": "Motivational message",
+  "should_revisit_milestone": true/false
+}"""
 
 
-def retrieve_weak_concept_content(concept: str, resolution_id: int) -> dict:
-    """Retrieves additional content related to a weak concept.
-    
-    Args:
-        concept: The concept the student is struggling with
-        resolution_id: The resolution ID to search within
-        
-    Returns:
-        dict: Related content that could help reinforce the concept
-    """
-    import asyncio
-    
+@track_llm_call("failure_recovery")
+async def analyze_failure_and_suggest_recovery(
+    quiz_results: dict,
+    original_content: str,
+    current_milestone: dict,
+    goal_context: str,
+) -> dict:
+    prompt = f"""A learner failed their verification quiz. Help them recover.
+
+QUIZ RESULTS:
+Overall Score: {quiz_results.get('overall_score', 0) * 100:.0f}%
+Summary: {quiz_results.get('summary_feedback', 'No feedback available')}
+Concepts to Reinforce: {', '.join(quiz_results.get('concepts_to_reinforce', []))}
+
+WHAT THEY STUDIED: {original_content[:500]}
+
+CURRENT MILESTONE: {current_milestone.get('title', 'Unknown')}
+Milestone Goal: {current_milestone.get('verification_criteria', 'Not specified')}
+
+OVERALL GOAL: {goal_context}
+
+Provide recovery strategies and next steps."""
+
     try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    
-    try:
-        results = loop.run_until_complete(
-            query_collection(resolution_id, f"explain {concept} fundamentals basics", n_results=3)
+        response = await client.aio.models.generate_content(
+            model="gemini-2.5-flash-lite",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=RECOVERY_SYSTEM_PROMPT,
+                temperature=0.6,
+                response_mime_type="application/json",
+            ),
         )
+        
+        return json.loads(response.text)
+        
+    except Exception:
         return {
-            "status": "success",
-            "documents": results.get("documents", [[]]),
-            "metadatas": results.get("metadatas", [[]]),
-        }
-    except Exception as e:
-        return {"status": "error", "error": str(e)}
-
-
-@track_llm_call("adapt_learning_path")
-async def adapt_learning_path(
-    resolution_id: int,
-    quiz_score: float,
-    weak_concepts: list[str],
-    strong_concepts: list[str],
-    current_day: int,
-    remaining_days: int,
-    current_syllabus: dict,
-) -> dict:
-    agent = create_adaptive_agent()
-    session_service = InMemorySessionService()
-    
-    runner = Runner(
-        agent=agent,
-        app_name="neuroresolv",
-        session_service=session_service,
-    )
-    
-    session = await session_service.create_session(
-        app_name="neuroresolv",
-        user_id=f"resolution_{resolution_id}",
-    )
-    
-    severity = "minor" if quiz_score >= 60 else ("moderate" if quiz_score >= 40 else "significant")
-    
-    prompt = f"""Analyze this student's performance and create an adaptation plan:
-
-Quiz Score: {quiz_score}% ({severity} intervention needed)
-Current Day: {current_day} of {current_day + remaining_days} total
-
-Weak Concepts (need reinforcement):
-{json.dumps(weak_concepts, indent=2)}
-
-Strong Concepts (understood well):
-{json.dumps(strong_concepts, indent=2)}
-
-Upcoming Syllabus Days:
-{json.dumps(current_syllabus.get('days', [])[current_day:current_day+5], indent=2)}
-
-Resolution ID for content retrieval: {resolution_id}
-
-Create an adaptive learning plan that:
-1. Reinforces weak concepts through different approaches
-2. Suggests how to modify upcoming sessions
-3. Provides encouragement and actionable study tips
-
-Return a valid JSON adaptation plan."""
-
-    result = None
-    async for event in runner.run_async(
-        user_id=f"resolution_{resolution_id}",
-        session_id=session.id,
-        new_message=types.Content(
-            role="user",
-            parts=[types.Part(text=prompt)]
-        ),
-    ):
-        if hasattr(event, "content") and event.content:
-            if hasattr(event.content, "parts"):
-                for part in event.content.parts:
-                    if hasattr(part, "text"):
-                        result = part.text
-    
-    adaptation = None
-    if result:
-        try:
-            json_start = result.find("{")
-            json_end = result.rfind("}") + 1
-            if json_start >= 0 and json_end > json_start:
-                adaptation = json.loads(result[json_start:json_end])
-        except json.JSONDecodeError:
-            pass
-    
-    if not adaptation:
-        adaptation = _generate_fallback_adaptation(weak_concepts, quiz_score)
-    
-    await log_adaptive_decision(
-        resolution_id=resolution_id,
-        weak_concepts=weak_concepts,
-        adaptation_type=adaptation.get("adaptation_type", "reinforcement"),
-        original_plan={"current_day": current_day},
-        adapted_plan=adaptation,
-    )
-    
-    return adaptation
-
-
-def _generate_fallback_adaptation(weak_concepts: list[str], score: float) -> dict:
-    return {
-        "adaptation_type": "reinforcement",
-        "weak_concepts": weak_concepts,
-        "reinforcement_content": {
-            "title": "Concept Review Session",
-            "description": f"Focused review of: {', '.join(weak_concepts)}",
-            "approach": "Breaking down concepts into smaller parts with examples",
-            "activities": [
-                "Re-read the original material with focus on weak areas",
-                "Create your own examples for each concept",
-                "Explain the concept in your own words",
+            "analysis": "Unable to analyze specifics, but continued practice will help.",
+            "weak_concepts": quiz_results.get("concepts_to_reinforce", []),
+            "review_strategies": [
+                {
+                    "concept": "general",
+                    "strategy": "Review the material again with focus on explaining concepts out loud",
+                    "resources": "Re-read the source material and take notes",
+                }
             ],
-            "estimated_minutes": 20,
-        },
-        "syllabus_modifications": [],
-        "encouragement_message": "Every expert was once a beginner. Let's reinforce these concepts together!",
-        "study_tips": [
-            "Try teaching the concept to someone else",
-            "Create flashcards for quick review",
-            "Look for real-world examples of these concepts",
-        ],
-    }
-
-
-@track_llm_call("generate_reinforcement_content")
-async def generate_reinforcement_content(
-    resolution_id: int,
-    weak_concepts: list[str],
-    previous_explanations: list[str],
-) -> dict:
-    agent = Agent(
-        name="content_reinforcer",
-        model="gemini-flash-lite-latest",
-        description="Creates alternative explanations for difficult concepts",
-        instruction="""Create new, alternative explanations for concepts the student is struggling with.
-Use different analogies, examples, and approaches than previously used.
-Focus on building understanding from first principles.
-
-Output Format (JSON):
-{
-    "reinforcement_materials": [
-        {
-            "concept": "concept_name",
-            "alternative_explanation": "New way to explain",
-            "analogy": "Real-world analogy",
-            "example": "Concrete example",
-            "practice_exercise": "Simple exercise to test understanding"
+            "next_session_focus": "Spend extra time on the concepts you struggled with",
+            "encouragement": "Learning takes time! Every attempt makes you stronger.",
+            "should_revisit_milestone": False,
         }
-    ]
-}""",
-        tools=[],
-    )
-    
-    session_service = InMemorySessionService()
-    runner = Runner(
-        agent=agent,
-        app_name="neuroresolv",
-        session_service=session_service,
-    )
-    
-    session = await session_service.create_session(
-        app_name="neuroresolv",
-        user_id=f"resolution_{resolution_id}",
-    )
-    
-    prompt = f"""Create reinforcement materials for these concepts:
 
-Concepts needing reinforcement:
-{json.dumps(weak_concepts, indent=2)}
 
-Previous explanations that didn't work well:
-{json.dumps(previous_explanations[:500] if previous_explanations else ["No previous explanations available"], indent=2)}
+REFLECTION_SYSTEM_PROMPT = """You are a thoughtful learning coach who generates weekly reflection prompts.
 
-Generate new, alternative ways to teach these concepts.
-Return a valid JSON object with reinforcement materials."""
+Create prompts that help learners:
+1. Celebrate their progress
+2. Identify what worked well
+3. Recognize challenges and how they overcame them
+4. Connect their learning to their bigger goal
+5. Set intentions for the coming week
 
-    result = None
-    async for event in runner.run_async(
-        user_id=f"resolution_{resolution_id}",
-        session_id=session.id,
-        new_message=types.Content(
-            role="user",
-            parts=[types.Part(text=prompt)]
-        ),
-    ):
-        if hasattr(event, "content") and event.content:
-            if hasattr(event.content, "parts"):
-                for part in event.content.parts:
-                    if hasattr(part, "text"):
-                        result = part.text
+Return JSON:
+{
+  "prompt": "The reflection prompt question",
+  "sub_prompts": ["Optional follow-up questions"]
+}"""
+
+
+@track_llm_call("weekly_reflection")
+async def generate_weekly_reflection_prompt(
+    week_number: int,
+    goal_context: str,
+    logs_this_week: list[dict],
+    milestone_progress: dict,
+) -> dict:
+    logs_summary = "\n".join([
+        f"- {log.get('date')}: {log.get('content')[:100]}..."
+        for log in logs_this_week
+    ]) if logs_this_week else "No logs this week"
     
-    if result:
-        try:
-            json_start = result.find("{")
-            json_end = result.rfind("}") + 1
-            if json_start >= 0 and json_end > json_start:
-                return json.loads(result[json_start:json_end])
-        except json.JSONDecodeError:
-            pass
-    
-    return {
-        "reinforcement_materials": [
-            {
-                "concept": concept,
-                "alternative_explanation": f"Let's think about {concept} differently...",
-                "analogy": f"Think of {concept} like...",
-                "example": f"A practical example of {concept} is...",
-                "practice_exercise": f"Try explaining {concept} in your own words.",
-            }
-            for concept in weak_concepts
+    prompt = f"""Generate a personalized weekly reflection prompt.
+
+WEEK NUMBER: {week_number}
+GOAL: {goal_context}
+
+ACTIVITY THIS WEEK:
+{logs_summary}
+
+MILESTONE PROGRESS:
+Current: {milestone_progress.get('current', 'N/A')}
+Completed: {milestone_progress.get('completed', 0)} of {milestone_progress.get('total', '?')}
+
+Create a thoughtful reflection prompt for this specific week."""
+
+    try:
+        response = await client.aio.models.generate_content(
+            model="gemini-2.5-flash-lite",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=REFLECTION_SYSTEM_PROMPT,
+                temperature=0.7,
+                response_mime_type="application/json",
+            ),
+        )
+        
+        return json.loads(response.text)
+        
+    except Exception:
+        prompts_by_week = [
+            "What was your biggest breakthrough this week? What made it click?",
+            "What challenged you most this week, and how did you handle it?",
+            "How has your understanding evolved compared to when you started?",
+            "What would you teach someone who's just starting this journey?",
         ]
-    }
+        return {
+            "prompt": prompts_by_week[(week_number - 1) % len(prompts_by_week)],
+            "sub_prompts": [],
+        }

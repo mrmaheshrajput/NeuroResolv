@@ -2,22 +2,27 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { api } from '../utils/api'
 import {
-    Brain, ArrowLeft, Upload, Sparkles, BookOpen, Target,
-    Calendar, Clock, Trophy, AlertTriangle, CheckCircle,
-    ChevronRight, Loader2, FileText, Play
+    ArrowLeft, Sparkles, Target, Calendar, Clock,
+    CheckCircle, Edit2, ChevronRight, Loader2, Flame,
+    BookOpen, AlertTriangle, RefreshCw
 } from 'lucide-react'
 import './ResolutionPage.css'
+
+const CADENCE_LABELS = {
+    daily: 'Daily',
+    '3x_week': '3x/week',
+    weekdays: 'Weekdays',
+    weekly: 'Weekly',
+}
 
 export default function ResolutionPage() {
     const { id } = useParams()
     const navigate = useNavigate()
     const [resolution, setResolution] = useState(null)
-    const [syllabus, setSyllabus] = useState(null)
-    const [sessions, setSessions] = useState([])
-    const [progress, setProgress] = useState(null)
-    const [weakAreas, setWeakAreas] = useState(null)
+    const [roadmap, setRoadmap] = useState(null)
+    const [streak, setStreak] = useState(null)
+    const [todayProgress, setTodayProgress] = useState(null)
     const [loading, setLoading] = useState(true)
-    const [uploading, setUploading] = useState(false)
     const [generating, setGenerating] = useState(false)
 
     useEffect(() => {
@@ -26,29 +31,19 @@ export default function ResolutionPage() {
 
     async function loadData() {
         try {
-            const [resData, sessionsData] = await Promise.all([
-                api.getResolution(id),
-                api.getSessionHistory(id).catch(() => []),
-            ])
+            const resData = await api.getResolution(id)
             setResolution(resData)
-            setSessions(sessionsData)
 
-            try {
-                const syllabusData = await api.getSyllabus(id)
-                setSyllabus(syllabusData)
-            } catch (e) {
-                // No syllabus yet
+            if (resData.roadmap_generated) {
+                const [roadmapData, streakData, todayData] = await Promise.all([
+                    api.getRoadmap(id).catch(() => null),
+                    api.getStreak(id).catch(() => null),
+                    api.getTodayProgress(id).catch(() => null),
+                ])
+                setRoadmap(roadmapData)
+                setStreak(streakData)
+                setTodayProgress(todayData)
             }
-
-            try {
-                const progressData = await api.getProgressOverview(id)
-                setProgress(progressData)
-            } catch (e) { }
-
-            try {
-                const weakData = await api.getWeakAreas(id)
-                setWeakAreas(weakData)
-            } catch (e) { }
         } catch (error) {
             console.error('Failed to load resolution:', error)
         } finally {
@@ -56,44 +51,16 @@ export default function ResolutionPage() {
         }
     }
 
-    async function handleFileUpload(e) {
-        const file = e.target.files?.[0]
-        if (!file) return
-
-        setUploading(true)
-        try {
-            await api.uploadContent(id, file)
-            loadData()
-        } catch (error) {
-            alert('Upload failed: ' + error.message)
-        } finally {
-            setUploading(false)
-        }
-    }
-
-    async function handleGenerateSyllabus() {
+    async function handleGenerateRoadmap() {
         setGenerating(true)
         try {
-            const syllabusData = await api.generateSyllabus(id)
-            setSyllabus(syllabusData)
-            loadData()
+            const roadmapData = await api.generateRoadmap(id)
+            setRoadmap(roadmapData)
+            setResolution(prev => ({ ...prev, roadmap_generated: true }))
         } catch (error) {
-            alert('Failed to generate syllabus: ' + error.message)
+            alert('Failed to generate roadmap: ' + error.message)
         } finally {
             setGenerating(false)
-        }
-    }
-
-    async function handleStartSession() {
-        try {
-            const todaySession = await api.getTodaySession(id)
-            if (todaySession) {
-                navigate(`/session/${id}/${todaySession.id}`)
-            } else {
-                alert('No session available for today!')
-            }
-        } catch (error) {
-            alert('Failed to load session: ' + error.message)
         }
     }
 
@@ -121,9 +88,9 @@ export default function ResolutionPage() {
         )
     }
 
-    const progressPercent = resolution.duration_days > 0
-        ? (resolution.current_day / resolution.duration_days) * 100
-        : 0
+    const currentMilestone = roadmap?.milestones?.find(m => m.status === 'in_progress')
+    const completedMilestones = roadmap?.milestones?.filter(m => m.status === 'completed').length || 0
+    const totalMilestones = roadmap?.milestones?.length || 0
 
     return (
         <div className="resolution-page">
@@ -139,110 +106,53 @@ export default function ResolutionPage() {
             <main className="page-main">
                 <div className="container">
                     <div className="resolution-hero">
-                        <div className="hero-icon">
-                            <Target size={32} />
-                        </div>
                         <div className="hero-content">
-                            <h1>{resolution.title}</h1>
-                            <p>{resolution.description}</p>
-                        </div>
-                    </div>
-
-                    <div className="stats-grid">
-                        <div className="stat-card">
-                            <Calendar className="stat-icon" />
-                            <div className="stat-content">
-                                <span className="stat-value">Day {resolution.current_day}</span>
-                                <span className="stat-label">of {resolution.duration_days} days</span>
+                            <div className="goal-category">
+                                <span className="category-badge">{resolution.category}</span>
+                                <span className="cadence-badge">{CADENCE_LABELS[resolution.cadence]}</span>
+                                {resolution.skill_level && (
+                                    <span className="skill-badge">{resolution.skill_level}</span>
+                                )}
                             </div>
+                            <h1>{resolution.goal_statement}</h1>
                         </div>
 
-                        <div className="stat-card">
-                            <Clock className="stat-icon" />
-                            <div className="stat-content">
-                                <span className="stat-value">{resolution.daily_time_minutes} min</span>
-                                <span className="stat-label">daily commitment</span>
-                            </div>
-                        </div>
-
-                        <div className="stat-card">
-                            <Trophy className="stat-icon" />
-                            <div className="stat-content">
-                                <span className="stat-value">{Math.round(progressPercent)}%</span>
-                                <span className="stat-label">complete</span>
-                            </div>
-                        </div>
-
-                        {progress && (
-                            <div className="stat-card">
-                                <CheckCircle className="stat-icon" />
-                                <div className="stat-content">
-                                    <span className="stat-value">{progress.quizzes_passed}</span>
-                                    <span className="stat-label">quizzes passed</span>
+                        {streak && (
+                            <div className="streak-card">
+                                <Flame className="streak-icon" />
+                                <div className="streak-info">
+                                    <span className="streak-number">{streak.current_streak}</span>
+                                    <span className="streak-label">day streak</span>
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    <div className="main-progress">
-                        <div className="progress-header">
-                            <span>Overall Progress</span>
-                            <span>{Math.round(progressPercent)}%</span>
-                        </div>
-                        <div className="progress-bar large">
-                            <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
-                        </div>
-                    </div>
-
-                    {!syllabus ? (
-                        <div className="setup-section">
-                            <div className="setup-card">
-                                <div className="setup-icon">
-                                    <Upload size={32} />
+                    {!resolution.roadmap_generated ? (
+                        <div className="generate-section">
+                            <div className="generate-card">
+                                <div className="generate-icon">
+                                    <Sparkles size={48} />
                                 </div>
-                                <h3>Step 1: Upload Learning Materials</h3>
-                                <p>Upload PDF, EPUB, or text files that you want to learn from.</p>
-                                <label className="btn btn-secondary">
-                                    <input
-                                        type="file"
-                                        accept=".pdf,.epub,.txt,.md"
-                                        onChange={handleFileUpload}
-                                        style={{ display: 'none' }}
-                                    />
-                                    {uploading ? (
-                                        <>
-                                            <Loader2 className="animate-spin" size={18} />
-                                            Uploading...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <FileText size={18} />
-                                            Choose File
-                                        </>
-                                    )}
-                                </label>
-                            </div>
-
-                            <div className="setup-card">
-                                <div className="setup-icon">
-                                    <Sparkles size={32} />
-                                </div>
-                                <h3>Step 2: Generate AI Syllabus</h3>
-                                <p>Our AI will create a personalized curriculum based on your goal and materials.</p>
+                                <h2>Generate Your Learning Roadmap</h2>
+                                <p>
+                                    Our AI will create a personalized milestone-based roadmap
+                                    tailored to your goal and learning style.
+                                </p>
                                 <button
-                                    onClick={handleGenerateSyllabus}
-                                    className="btn btn-primary"
+                                    onClick={handleGenerateRoadmap}
+                                    className="btn btn-primary btn-lg"
                                     disabled={generating}
                                 >
                                     {generating ? (
                                         <>
-                                            <Loader2 className="animate-spin" size={18} />
-                                            Generating...
+                                            <Loader2 className="animate-spin" size={20} />
+                                            Generating Roadmap...
                                         </>
                                     ) : (
                                         <>
-                                            <Sparkles size={18} />
-                                            Generate Syllabus
+                                            <Sparkles size={20} />
+                                            Generate AI Roadmap
                                         </>
                                     )}
                                 </button>
@@ -250,66 +160,115 @@ export default function ResolutionPage() {
                         </div>
                     ) : (
                         <>
-                            <div className="action-section">
-                                <button onClick={handleStartSession} className="btn btn-primary btn-lg start-btn">
-                                    <Play size={24} />
-                                    Start Today's Session
-                                    <ChevronRight size={20} />
-                                </button>
+                            <div className="stats-row">
+                                <div className="stat-card">
+                                    <Target className="stat-icon" />
+                                    <div className="stat-info">
+                                        <span className="stat-value">{completedMilestones}/{totalMilestones}</span>
+                                        <span className="stat-label">Milestones</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <Flame className="stat-icon" />
+                                    <div className="stat-info">
+                                        <span className="stat-value">{streak?.current_streak || 0}</span>
+                                        <span className="stat-label">Current Streak</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <CheckCircle className="stat-icon" />
+                                    <div className="stat-info">
+                                        <span className="stat-value">{streak?.total_verified_days || 0}</span>
+                                        <span className="stat-label">Verified Days</span>
+                                    </div>
+                                </div>
                             </div>
 
-                            {weakAreas && weakAreas.weak_concepts.length > 0 && (
-                                <div className="weak-areas-section">
-                                    <h2>
-                                        <AlertTriangle size={24} />
-                                        Areas Needing Reinforcement
-                                    </h2>
-                                    <div className="weak-concepts">
-                                        {weakAreas.weak_concepts.map((concept, i) => (
-                                            <div key={i} className="concept-chip">
-                                                <span className="concept-name">{concept.concept}</span>
-                                                <span className="concept-score">{Math.round(concept.mastery_score * 100)}%</span>
-                                            </div>
-                                        ))}
+                            <div className="daily-action-section">
+                                {todayProgress ? (
+                                    <div className="today-logged-card">
+                                        <CheckCircle size={24} className="logged-icon" />
+                                        <div className="logged-content">
+                                            <h3>Today's Progress Logged</h3>
+                                            <p>{todayProgress.content.slice(0, 100)}...</p>
+                                            {!todayProgress.verified && (
+                                                <Link
+                                                    to={`/checkin/${id}?verify=${todayProgress.id}`}
+                                                    className="btn btn-primary btn-sm"
+                                                >
+                                                    Take Verification Quiz
+                                                </Link>
+                                            )}
+                                        </div>
                                     </div>
+                                ) : (
+                                    <Link to={`/checkin/${id}`} className="daily-checkin-btn">
+                                        <div className="checkin-content">
+                                            <BookOpen size={28} />
+                                            <div className="checkin-text">
+                                                <h3>Log Today's Progress</h3>
+                                                <p>What did you work on today?</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight size={24} />
+                                    </Link>
+                                )}
+                            </div>
+
+                            {roadmap?.needs_refresh && (
+                                <div className="refresh-notice">
+                                    <AlertTriangle size={20} />
+                                    <span>You've made edits. The roadmap may need refreshing.</span>
+                                    <button className="btn btn-sm btn-secondary">
+                                        <RefreshCw size={14} />
+                                        Refresh
+                                    </button>
                                 </div>
                             )}
 
-                            <div className="syllabus-section">
-                                <h2>
-                                    <BookOpen size={24} />
-                                    Your Learning Syllabus
-                                </h2>
-                                <div className="syllabus-days">
-                                    {syllabus.days.map((day, i) => {
-                                        const session = sessions.find(s => s.day_number === day.day)
-                                        const isCompleted = session?.is_completed
-                                        const isCurrent = day.day === resolution.current_day + 1
+                            <div className="roadmap-section">
+                                <div className="section-header">
+                                    <h2>Your Learning Roadmap</h2>
+                                    <button className="btn btn-ghost btn-sm">
+                                        <Edit2 size={16} />
+                                        Edit
+                                    </button>
+                                </div>
 
-                                        return (
-                                            <div
-                                                key={i}
-                                                className={`syllabus-day ${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''}`}
-                                            >
-                                                <div className="day-number">
-                                                    {isCompleted ? <CheckCircle size={18} /> : <span>Day {day.day}</span>}
-                                                </div>
-                                                <div className="day-content">
-                                                    <h4>{day.title}</h4>
-                                                    <p>{day.description}</p>
-                                                    <div className="day-concepts">
-                                                        {day.concepts.slice(0, 3).map((c, j) => (
-                                                            <span key={j} className="concept-tag">{c}</span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                <div className="day-time">
-                                                    <Clock size={14} />
-                                                    {day.estimated_minutes} min
-                                                </div>
+                                <div className="milestones-list">
+                                    {roadmap?.milestones?.map((milestone, i) => (
+                                        <div
+                                            key={milestone.id}
+                                            className={`milestone-card ${milestone.status}`}
+                                        >
+                                            <div className="milestone-number">
+                                                {milestone.status === 'completed' ? (
+                                                    <CheckCircle size={24} />
+                                                ) : (
+                                                    <span>{i + 1}</span>
+                                                )}
                                             </div>
-                                        )
-                                    })}
+                                            <div className="milestone-content">
+                                                <h3>{milestone.title}</h3>
+                                                <p>{milestone.description}</p>
+                                                <div className="milestone-meta">
+                                                    <span className="verification-label">
+                                                        <Target size={14} />
+                                                        {milestone.verification_criteria}
+                                                    </span>
+                                                    {milestone.target_date && (
+                                                        <span className="target-date">
+                                                            <Calendar size={14} />
+                                                            Target: {new Date(milestone.target_date).toLocaleDateString()}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {milestone.is_edited && (
+                                                    <span className="edited-badge">Edited</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </>

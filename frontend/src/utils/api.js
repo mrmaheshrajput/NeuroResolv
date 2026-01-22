@@ -88,80 +88,73 @@ class ApiClient {
         return this.request(`/resolutions/${id}`)
     }
 
-    async uploadContent(resolutionId, file) {
-        const formData = new FormData()
-        formData.append('file', file)
-
-        const token = this.getToken()
-        const response = await fetch(`${this.baseUrl}/resolutions/${resolutionId}/upload`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-            body: formData,
-        })
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ detail: 'Upload failed' }))
-            throw new Error(error.detail)
-        }
-
-        return response.json()
-    }
-
-    async generateSyllabus(resolutionId) {
-        return this.request(`/resolutions/${resolutionId}/generate-syllabus`, {
+    async generateRoadmap(resolutionId) {
+        return this.request(`/resolutions/${resolutionId}/generate-roadmap`, {
             method: 'POST',
         })
     }
 
-    async getSyllabus(resolutionId) {
-        return this.request(`/resolutions/${resolutionId}/syllabus`)
+    async getRoadmap(resolutionId) {
+        return this.request(`/resolutions/${resolutionId}/roadmap`)
     }
 
-    async getTodaySession(resolutionId) {
-        return this.request(`/sessions/today?resolution_id=${resolutionId}`)
+    async updateMilestone(milestoneId, data) {
+        return this.request(`/resolutions/milestones/${milestoneId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        })
     }
 
-    async getSession(sessionId) {
-        return this.request(`/sessions/${sessionId}`)
-    }
-
-    async completeSession(sessionId) {
-        return this.request(`/sessions/${sessionId}/complete`, {
+    async completeMilestone(milestoneId) {
+        return this.request(`/resolutions/milestones/${milestoneId}/complete`, {
             method: 'POST',
         })
     }
 
-    async getQuiz(sessionId) {
-        return this.request(`/sessions/${sessionId}/quiz`)
+    async logProgress(resolutionId, data) {
+        return this.request(`/progress/log/${resolutionId}`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        })
     }
 
-    async submitQuiz(sessionId, answers) {
-        return this.request(`/sessions/${sessionId}/quiz/submit`, {
+    async getTodayProgress(resolutionId) {
+        return this.request(`/progress/today/${resolutionId}`)
+    }
+
+    async generateVerificationQuiz(logId) {
+        return this.request(`/progress/log/${logId}/verify`, {
+            method: 'POST',
+        })
+    }
+
+    async submitVerificationQuiz(quizId, answers) {
+        return this.request(`/progress/quiz/${quizId}/submit`, {
             method: 'POST',
             body: JSON.stringify({ answers }),
         })
     }
 
-    async getSessionHistory(resolutionId) {
-        return this.request(`/sessions/history/${resolutionId}`)
+    async getProgressHistory(resolutionId, limit = 30) {
+        return this.request(`/progress/history/${resolutionId}?limit=${limit}`)
     }
 
     async getProgressOverview(resolutionId) {
         return this.request(`/progress/overview/${resolutionId}`)
     }
 
-    async getWeakAreas(resolutionId) {
-        return this.request(`/progress/weak-areas/${resolutionId}`)
+    async getStreak(resolutionId) {
+        return this.request(`/progress/streak/${resolutionId}`)
     }
 
-    async getStreakInfo(resolutionId) {
-        return this.request(`/progress/streaks/${resolutionId}`)
-    }
-
-    async getProgressSummary() {
-        return this.request('/progress/summary')
+    async transcribeVoice(audioBase64, durationSeconds = null) {
+        return this.request('/progress/transcribe', {
+            method: 'POST',
+            body: JSON.stringify({
+                audio_base64: audioBase64,
+                duration_seconds: durationSeconds,
+            }),
+        })
     }
 }
 

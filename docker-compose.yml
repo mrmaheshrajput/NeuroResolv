@@ -13,12 +13,10 @@ services:
       - OPIK_API_KEY=${OPIK_API_KEY:-sample-opik-api-key}
       - OPIK_WORKSPACE=${OPIK_WORKSPACE:-default}
       - OPIK_PROJECT_NAME=${OPIK_PROJECT_NAME:-neuroresolv}
-      - CHROMA_PERSIST_DIRECTORY=/app/chroma_data
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - DEBUG=${DEBUG:-true}
     volumes:
       - backend_data:/app
-      - chroma_data:/app/chroma_data
     networks:
       - neuroresolv-network
     healthcheck:

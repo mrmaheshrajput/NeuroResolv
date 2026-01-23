@@ -8,6 +8,10 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=sqlite+aiosqlite:///./neuroresolv.db
+      # - POSTGRES_USER=postgres
+      # - POSTGRES_PASSWORD=postgres_password
+      # - POSTGRES_HOST=postgres
+      # - POSTGRES_DB=neuroresolv
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-not-for-production}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-sample-gemini-api-key}
       - OPIK_API_KEY=${OPIK_API_KEY:-sample-opik-api-key}
@@ -15,6 +19,8 @@ services:
       - OPIK_PROJECT_NAME=${OPIK_PROJECT_NAME:-neuroresolv}
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - DEBUG=${DEBUG:-true}
+    # depends_on:
+    #   - postgres
     volumes:
       - backend_data:/app
     networks:
@@ -40,13 +46,12 @@ services:
     networks:
       - neuroresolv-network
 
-  # Optional: PostgreSQL for production
   # postgres:
   #   image: postgres:16-alpine
   #   container_name: neuroresolv-postgres
   #   environment:
-  #     POSTGRES_USER: neuroresolv
-  #     POSTGRES_PASSWORD: neuroresolv_password
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres_password
   #     POSTGRES_DB: neuroresolv
   #   ports:
   #     - "5432:5432"

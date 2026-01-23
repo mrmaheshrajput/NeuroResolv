@@ -9,8 +9,9 @@ class Settings(BaseSettings):
     # Postgres specific (optional, used if provided)
     postgres_user: str | None = ""
     postgres_password: str | None = ""
-    postgres_host: str | None = "rds.amazonaws.com"
+    postgres_host: str | None = ""
     postgres_port: int = 5432
+    postgres_db: str | None = ""
     postgres_db: str | None = ""
     
     # AWS RDS IAM Authentication

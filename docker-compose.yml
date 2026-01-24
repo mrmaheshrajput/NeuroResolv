@@ -7,22 +7,20 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite+aiosqlite:///./neuroresolv.db
-      # - POSTGRES_USER=postgres
-      # - POSTGRES_PASSWORD=postgres_password
-      # - POSTGRES_HOST=postgres
-      # - POSTGRES_DB=neuroresolv
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - DB_SECRET_NAME=${DB_SECRET_NAME:-rdb_creds}
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-not-for-production}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-sample-gemini-api-key}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-sample-openai-api-key}
       - OPIK_API_KEY=${OPIK_API_KEY:-sample-opik-api-key}
       - OPIK_WORKSPACE=${OPIK_WORKSPACE:-default}
       - OPIK_PROJECT_NAME=${OPIK_PROJECT_NAME:-neuroresolv}
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - DEBUG=${DEBUG:-true}
-    # depends_on:
-    #   - postgres
+      - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000","http://localhost:5173"]}
     volumes:
-      - backend_data:/app
+      - backend_data:/app/chroma_data
+      - ~/.aws:/root/.aws:ro
     networks:
       - neuroresolv-network
     healthcheck:
@@ -36,34 +34,20 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
     container_name: neuroresolv-frontend
     ports:
       - "3000:3000"
-    environment:
-      - VITE_API_URL=http://localhost:8000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - neuroresolv-network
-
-  # postgres:
-  #   image: postgres:16-alpine
-  #   container_name: neuroresolv-postgres
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: postgres_password
-  #     POSTGRES_DB: neuroresolv
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - neuroresolv-network
 
 volumes:
   backend_data:
   chroma_data:
-  # postgres_data:
 
 networks:
   neuroresolv-network:

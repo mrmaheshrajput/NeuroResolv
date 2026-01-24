@@ -1,17 +1,77 @@
+"""
+Database configuration for PostgreSQL with AWS Secrets Manager integration.
+
+This module creates the async SQLAlchemy engine and session maker
+using credentials fetched from AWS Secrets Manager.
+"""
+
+from functools import lru_cache
+from urllib.parse import quote_plus
+
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 
 from app.config import get_settings
+from app.aws.secrets import get_db_credentials
 
 
 class Base(DeclarativeBase):
     pass
 
 
-settings = get_settings()
+@lru_cache(maxsize=1)
+def get_database_url() -> str:
+    """
+    Build the PostgreSQL database URL from AWS Secrets Manager credentials.
+
+    Uses lru_cache to cache the URL since credentials don't change often.
+
+    Returns:
+        PostgreSQL connection URL for asyncpg driver
+    """
+    settings = get_settings()
+    creds = get_db_credentials(
+        secret_name=settings.db_secret_name,
+        region_name=settings.aws_region,
+    )
+
+    # URL-encode password to handle special characters
+    encoded_password = quote_plus(creds["password"])
+
+    return (
+        f"postgresql+asyncpg://{creds['username']}:{encoded_password}"
+        f"@{creds['host']}:{creds['port']}/{creds['dbname']}"
+    )
+
+
+def get_sync_database_url() -> str:
+    """
+    Build the PostgreSQL database URL for synchronous operations (e.g., Alembic).
+
+    Returns:
+        PostgreSQL connection URL for psycopg2 driver
+    """
+    settings = get_settings()
+    creds = get_db_credentials(
+        secret_name=settings.db_secret_name,
+        region_name=settings.aws_region,
+    )
+
+    # URL-encode password to handle special characters
+    encoded_password = quote_plus(creds["password"])
+
+    return (
+        f"postgresql+psycopg2://{creds['username']}:{encoded_password}"
+        f"@{creds['host']}:{creds['port']}/{creds['dbname']}"
+    )
+
+
 engine = create_async_engine(
-    settings.database_url,
-    echo=settings.debug,
+    get_database_url(),
+    echo=get_settings().debug,
+    pool_size=5,
+    max_overflow=10,
+    pool_pre_ping=True,
 )
 
 async_session_maker = async_sessionmaker(
@@ -22,6 +82,7 @@ async_session_maker = async_sessionmaker(
 
 
 async def get_db() -> AsyncSession:
+    """Dependency for FastAPI to get database sessions."""
     async with async_session_maker() as session:
         try:
             yield session
@@ -30,5 +91,6 @@ async def get_db() -> AsyncSession:
 
 
 async def create_tables():
+    """Create all tables in the database."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

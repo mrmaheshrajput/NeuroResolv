@@ -85,11 +85,11 @@ export default function LoginPage() {
                         </div>
 
                         <div className="hero-links animate-fadeIn" style={{ animationDelay: '0.4s' }}>
-                            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hero-link">
+                            <a href="https://github.com/mrmaheshrajput/NeuroResolv" target="_blank" rel="noopener noreferrer" className="hero-link">
                                 <Github size={20} />
                                 View on GitHub
                             </a>
-                            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="hero-link">
+                            <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noopener noreferrer" className="hero-link">
                                 <Youtube size={20} />
                                 Watch Demo
                             </a>

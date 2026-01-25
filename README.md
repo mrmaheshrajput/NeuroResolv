@@ -1,7 +1,7 @@
 <h1 align="center" style="border-bottom: none">
     <div>
         <a href="https://neuro-resolv.vercel.app/"><picture>
-            <img alt="NeuroResolv logo" src="https://raw.githubusercontent.com/mrmaheshrajput/NeuroResolv/refs/heads/main/frontend/public/favicon.svg" width="200" />
+            <img alt="NeuroResolv logo" src="https://raw.githubusercontent.com/mrmaheshrajput/NeuroResolv/refs/heads/main/frontend/public/favicon.svg" width="60" />
         </picture></a>
         <br>
         NeuroResolv 🧠✨

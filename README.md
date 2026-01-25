@@ -1,10 +1,29 @@
-# NeuroResolv 🧠✨
-
-**Adaptive AI Tutor & Accountability Partner for New Year Resolutions**
-
+<h1 align="center" style="border-bottom: none">
+    <div>
+        <a href="https://neuro-resolv.vercel.app/"><picture>
+            <img alt="NeuroResolv logo" src="https://raw.githubusercontent.com/mrmaheshrajput/NeuroResolv/refs/heads/main/frontend/public/favicon.svg" width="200" />
+        </picture></a>
+        <br>
+        NeuroResolv 🧠✨
+    </div>
+</h1>
+<h2 align="center" style="border-bottom: none">Open-source Adaptive AI Tutor & Accountability Partner for New Year Resolutions</h2>
+<p align="center">
 Transform your New Year's resolutions from simple task tracking into genuine learning journeys with AI-powered adaptive tutoring.
+</p>
 
-![NeuroResolv Banner](https://via.placeholder.com/800x400/1a1a2e/8b5cf6?text=NeuroResolv)
+<div align="center">
+
+[![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff)](#)
+[![React](https://img.shields.io/badge/React-%2320232a.svg?logo=react&logoColor=%2361DAFB)](#)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009485.svg?logo=fastapi&logoColor=white)](#)
+[![Google Gemini](https://img.shields.io/badge/Google%20Gemini-886FBF?logo=googlegemini&logoColor=fff)](#)
+[![AWS](https://custom-icon-badges.demolab.com/badge/AWS-%23FF9900.svg?logo=aws&logoColor=white)](#)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=fff)](#)
+[![Vercel](https://img.shields.io/badge/Vercel-%23000000.svg?logo=vercel&logoColor=white)](#)
+[![CircleCI](https://img.shields.io/badge/CircleCI-343434?logo=circleci&logoColor=fff)](#)
+
+</div>
 
 ## 🎯 The Problem
 
@@ -12,32 +31,35 @@ Most resolution apps are just "tick-box" trackers. They tell you IF you did some
 
 ## ✨ Key Features
 
-### 🎓 Dynamic Syllabus Generation
-Upload your learning materials (PDFs, EPUBs, text files), and our AI creates a personalized 30-day curriculum tailored to your goal.
+### 🎯 Milestone-Based Resolution Tracking
+Move away from simple checklists to a structured, milestone-based learning journey that focuses on genuine progress.
 
-### 📖 Micro-Learning Sessions
-Daily 30-minute sessions with perfectly chunked content. No overwhelming walls of text—just digestible, focused learning.
+### 🗺️ Dynamic Roadmap Generation
+Our AI Roadmap Agent analyzes your goals and learning materials (PDFs, EPUBs, text) to create a personalized, multi-stage curriculum.
 
-### 🧪 Active Recall Engine
-After each session, take an AI-generated quiz that tests genuine understanding, not just memorization.
+### 🎙️ Multi-Modal Progress Logging
+Log your daily learning via text or voice notes (powered by Whisper API), allowing for a natural and friction-less reflection process.
 
-### 🔄 The Adaptive Loop (Our Secret Sauce)
-**This is what makes NeuroResolv different:**
-- Fail a quiz? Tomorrow's content automatically adapts to reinforce your weak concepts
-- We don't just track IF you did it—we track if you LEARNED it
-- Personalized reinforcement sessions when you struggle
+### 🧪 Context-Aware Verification
+The Verification Agent generates dynamic quizzes based *specifically* on your daily progress logs to ensure concepts are actually understood.
+
+### 🔥 Accountability & Streaks
+Maintain consistency with automated streak tracking, daily progress logs, and weekly AI-powered reflections.
+
+### 🔄 Adaptive Failure Recovery
+If you fall behind or struggle with certain concepts, the Adaptive Agent automatically adjusts your roadmap and provides reinforcement sessions.
 
 ## 🛠️ Tech Stack
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
 | **Frontend** | React + Vite | Modern SPA with stunning UI |
-| **Backend** | FastAPI | Async Python API with auto-docs |
-| **AI Agents** | Google ADK | Multi-agent orchestration |
-| **LLM** | Gemini 2.0 Flash | Fast, capable foundation model |
-| **Vector DB** | ChromaDB | RAG for learning content |
-| **Database** | SQLite/PostgreSQL | User data and history |
-| **Observability** | Opik by Comet | LLM tracing and evaluation |
+| **Backend** | FastAPI (Python 3.12) | Async API with automated migrations |
+| **AI Agents** | Google ADK | Multi-agent orchestration system |
+| **LLMs** | Gemini 2.5 Flash + Whisper | Fast foundation model & Voice transcription |
+| **Database** | PostgreSQL + Alembic | Robust persistence and schema management |
+| **Infrastructure** | AWS ECS + RDS | Scalable cloud deployment |
+| **Observability** | Opik Cloud | LLM tracing and evaluation |
 
 ## 🚀 Quick Start
 
@@ -107,14 +129,16 @@ Create a `backend/.env` file with your credentials:
 ```env
 # Required for AI features
 GOOGLE_API_KEY=your-gemini-api-key
+OPENAI_API_KEY=your-openai-api-key
 
 # Required for LLM observability
 OPIK_API_KEY=your-opik-api-key
 OPIK_WORKSPACE=default
 OPIK_PROJECT_NAME=neuroresolv
 
-# Database (SQLite by default, or PostgreSQL)
-DATABASE_URL=sqlite+aiosqlite:///./neuroresolv.db
+# AWS & Database (PostgreSQL)
+AWS_REGION=us-east-1
+DB_SECRET_NAME=your-db-secret-name
 
 # Security
 SECRET_KEY=your-production-secret-key
@@ -136,13 +160,17 @@ neuroresolv/
 ├── backend/
 │   ├── app/
 │   │   ├── agents/          # Google ADK agents
+│   │   │   ├── roadmap_agent.py
+│   │   │   ├── verification_agent.py
 │   │   │   ├── syllabus_agent.py
 │   │   │   ├── quiz_agent.py
 │   │   │   └── adaptive_agent.py
-│   │   ├── api/             # FastAPI routers
-│   │   ├── db/              # Database models
+│   │   ├── api/             # FastAPI routers (Resolutions, Sessions, Progress)
+│   │   ├── aws/             # AWS integration (Secrets Manager)
+│   │   ├── db/              # Database models & migrations
 │   │   ├── services/        # Business logic
 │   │   └── observability/   # Opik integration
+│   ├── alembic/             # SQL migrations
 │   ├── main.py
 │   └── pyproject.toml
 ├── frontend/
@@ -190,4 +218,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Built with ❤️ for the Comet Resolution Hackathon 2026
+Built for the Comet Resolution Hackathon 2026

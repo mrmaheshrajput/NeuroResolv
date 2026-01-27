@@ -54,18 +54,22 @@ class Cadence(str, Enum):
     WEEKLY = "weekly"
 
 
-class LearningSourceType(str, Enum):
-    BOOK = "book"
-    URL = "url"
-    YOUTUBE = "youtube"
-    COURSE = "course"
-    OTHER = "other"
 
+class NegotiationRequest(BaseModel):
+    goal_statement: str
+    category: GoalCategory
+    skill_level: Optional[SkillLevel] = None
+    cadence: Cadence
 
-class LearningSource(BaseModel):
-    type: LearningSourceType
-    title: Optional[str] = None
-    value: Optional[str] = None
+class NegotiationSuggestion(BaseModel):
+    cadence: Cadence
+    reason: str
+
+class NegotiationResponse(BaseModel):
+    is_feasible: bool
+    feedback: str
+    suggestion: Optional[NegotiationSuggestion] = None
+    streak_trigger: str
 
 
 class ResolutionCreate(BaseModel):
@@ -73,7 +77,6 @@ class ResolutionCreate(BaseModel):
     category: GoalCategory = GoalCategory.LEARNING
     skill_level: Optional[SkillLevel] = None
     cadence: Cadence = Cadence.DAILY
-    learning_sources: list[LearningSource] = []
 
 
 class ResolutionResponse(BaseModel):
@@ -83,7 +86,6 @@ class ResolutionResponse(BaseModel):
     category: str
     skill_level: Optional[str]
     cadence: str
-    learning_sources: list
     status: str
     current_milestone: int
     roadmap_generated: bool

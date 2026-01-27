@@ -30,7 +30,6 @@ class Resolution(Base):
     category: Mapped[str] = mapped_column(String(100), default="learning")
     skill_level: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     cadence: Mapped[str] = mapped_column(String(50), default="daily")
-    learning_sources: Mapped[list] = mapped_column(JSON, default=list)
     
     status: Mapped[str] = mapped_column(String(50), default="active")
     current_milestone: Mapped[int] = mapped_column(Integer, default=0)

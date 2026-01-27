@@ -84,6 +84,13 @@ class ApiClient {
         })
     }
 
+    async negotiateResolution(data) {
+        return this.request('/resolutions/negotiate', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        })
+    }
+
     async getResolution(id) {
         return this.request(`/resolutions/${id}`)
     }

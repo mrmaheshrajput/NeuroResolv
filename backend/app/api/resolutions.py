@@ -11,9 +11,10 @@ from app.schemas import (
     ResolutionResponse,
     RoadmapResponse,
     MilestoneResponse,
-    MilestoneUpdate,
+    NegotiationRequest,
+    NegotiationResponse,
 )
-from app.agents import generate_roadmap
+from app.agents import generate_roadmap, analyze_feasibility
 
 
 router = APIRouter(prefix="/resolutions", tags=["resolutions"])
@@ -31,7 +32,6 @@ async def create_resolution(
         category=data.category.value,
         skill_level=data.skill_level.value if data.skill_level else None,
         cadence=data.cadence.value,
-        learning_sources=[s.model_dump() for s in data.learning_sources],
     )
     
     db.add(resolution)
@@ -43,6 +43,20 @@ async def create_resolution(
     await db.commit()
     
     return resolution
+
+
+@router.post("/negotiate", response_model=NegotiationResponse)
+async def negotiate_resolution(
+    data: NegotiationRequest,
+    user: dict = Depends(get_current_user),
+):
+    analysis = await analyze_feasibility(
+        goal_statement=data.goal_statement,
+        category=data.category.value,
+        skill_level=data.skill_level.value if data.skill_level else None,
+        cadence=data.cadence.value,
+    )
+    return analysis
 
 
 @router.get("", response_model=list[ResolutionResponse])
@@ -101,7 +115,7 @@ async def generate_resolution_roadmap(
         category=resolution.category,
         skill_level=resolution.skill_level,
         cadence=resolution.cadence,
-        learning_sources=resolution.learning_sources,
+        learning_sources=[],  # Removed learning sources
     )
     
     today = datetime.utcnow().date()

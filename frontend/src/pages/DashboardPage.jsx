@@ -193,50 +193,53 @@ function ResolutionCard({ resolution, onClick }) {
     )
 }
 
-function CreateResolutionModal({ onClose, onCreated }) {
-    const [step, setStep] = useState(1)
-    const [goalStatement, setGoalStatement] = useState('')
-    const [category, setCategory] = useState('learning')
-    const [skillLevel, setSkillLevel] = useState('')
-    const [cadence, setCadence] = useState('daily')
-    const [sources, setSources] = useState([])
-    const [newSourceType, setNewSourceType] = useState('book')
-    const [newSourceValue, setNewSourceValue] = useState('')
-    const [skipResources, setSkipResources] = useState(false)
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState('')
+const [loading, setLoading] = useState(false)
+const [negotiating, setNegotiating] = useState(false)
+const [negotiationResult, setNegotiationResult] = useState(null)
+const [error, setError] = useState('')
 
-    function addSource() {
-        if (!newSourceValue.trim()) return
-
-        setSources([...sources, {
-            type: newSourceType,
-            title: newSourceType === 'book' ? newSourceValue : null,
-            value: newSourceType !== 'book' ? newSourceValue : null,
-        }])
-        setNewSourceValue('')
+async function handleNext() {
+    if (step === 1) {
+        setStep(2)
+        return
     }
 
-    function removeSource(index) {
-        setSources(sources.filter((_, i) => i !== index))
-    }
-
-    async function handleSubmit() {
-        if (goalStatement.length < 10) {
-            setError('Please describe your goal in more detail')
-            return
-        }
-
+    if (step === 2) {
+        setNegotiating(true)
         setError('')
-        setLoading(true)
+        try {
+            const result = await api.negotiateResolution({
+                goal_statement: goalStatement,
+                category,
+                skill_level: skillLevel || null,
+                cadence,
+            })
+            setNegotiationResult(result)
+            if (!result.is_feasible) {
+                // Stay on step 2 but show negotiation
+            } else {
+                handleSubmit()
+            }
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setNegotiating(false)
+        }
+    }
+}
 
+async function applySuggestion() {
+    if (negotiationResult?.suggestion) {
+        setCadence(negotiationResult.suggestion.cadence)
+        setNegotiationResult(null)
+        // Re-negotiate or just submit? Let's just submit with the new cadence to be fast
+        setLoading(true)
         try {
             const resolution = await api.createResolution({
                 goal_statement: goalStatement,
                 category,
                 skill_level: skillLevel || null,
-                cadence,
-                learning_sources: sources,
+                cadence: negotiationResult.suggestion.cadence,
             })
             onCreated(resolution)
         } catch (err) {
@@ -245,206 +248,204 @@ function CreateResolutionModal({ onClose, onCreated }) {
             setLoading(false)
         }
     }
+}
 
-    return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">
-                    <h2>Create New Resolution</h2>
-                    <button onClick={onClose} className="modal-close">
-                        <X size={24} />
-                    </button>
-                </div>
+async function handleSubmit() {
+    if (goalStatement.length < 10) {
+        setError('Please describe your goal in more detail')
+        return
+    }
 
-                {error && <div className="error-message">{error}</div>}
+    setError('')
+    setLoading(true)
 
-                <div className="modal-steps">
-                    <div className={`step ${step >= 1 ? 'active' : ''}`}>1. Goal</div>
-                    <div className={`step ${step >= 2 ? 'active' : ''}`}>2. Details</div>
-                    <div className={`step ${step >= 3 ? 'active' : ''}`}>3. Resources</div>
-                </div>
+    try {
+        const resolution = await api.createResolution({
+            goal_statement: goalStatement,
+            category,
+            skill_level: skillLevel || null,
+            cadence,
+        })
+        onCreated(resolution)
+    } catch (err) {
+        setError(err.message)
+    } finally {
+        setLoading(false)
+    }
+}
 
-                <div className="modal-form">
-                    {step === 1 && (
-                        <div className="step-content">
-                            <div className="input-group">
-                                <label className="input-label">What's your goal?</label>
-                                <textarea
-                                    className="input textarea"
-                                    placeholder="e.g., Read 12 books on behavioral psychology this year, or Learn Spanish to conversational fluency"
-                                    value={goalStatement}
-                                    onChange={(e) => setGoalStatement(e.target.value)}
-                                    rows={4}
-                                />
-                                <p className="input-hint">Be specific about what you want to achieve</p>
-                            </div>
+return (
+    <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+                <h2>Create New Resolution</h2>
+                <button onClick={onClose} className="modal-close">
+                    <X size={24} />
+                </button>
+            </div>
 
-                            <div className="input-group">
-                                <label className="input-label">Category</label>
-                                <div className="category-grid">
-                                    {Object.entries(CATEGORY_LABELS).map(([key, label]) => {
-                                        const Icon = CATEGORY_ICONS[key]
-                                        return (
-                                            <button
-                                                key={key}
-                                                type="button"
-                                                className={`category-btn ${category === key ? 'selected' : ''}`}
-                                                onClick={() => setCategory(key)}
-                                            >
-                                                <Icon size={20} />
-                                                <span>{label}</span>
-                                            </button>
-                                        )
-                                    })}
-                                </div>
+            {error && <div className="error-message">{error}</div>}
+
+            <div className="modal-steps">
+                <div className={`step ${step >= 1 ? 'active' : ''}`}>1. Goal</div>
+                <div className={`step ${step >= 2 ? 'active' : ''}`}>2. Details</div>
+            </div>
+
+            <div className="modal-form">
+                {step === 1 && (
+                    <div className="step-content">
+                        <div className="input-group">
+                            <label className="input-label">What's your goal?</label>
+                            <textarea
+                                className="input textarea"
+                                placeholder="e.g., Read 12 books on behavioral psychology this year, or Learn Spanish to conversational fluency"
+                                value={goalStatement}
+                                onChange={(e) => setGoalStatement(e.target.value)}
+                                rows={4}
+                            />
+                            <p className="input-hint">Be specific about what you want to achieve</p>
+                        </div>
+
+                        <div className="input-group">
+                            <label className="input-label">Category</label>
+                            <div className="category-grid">
+                                {Object.entries(CATEGORY_LABELS).map(([key, label]) => {
+                                    const Icon = CATEGORY_ICONS[key]
+                                    return (
+                                        <button
+                                            key={key}
+                                            type="button"
+                                            className={`category-btn ${category === key ? 'selected' : ''}`}
+                                            onClick={() => setCategory(key)}
+                                        >
+                                            <Icon size={20} />
+                                            <span>{label}</span>
+                                        </button>
+                                    )
+                                })}
                             </div>
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    {step === 2 && (
-                        <div className="step-content">
-                            <div className="input-group">
-                                <label className="input-label">Current Skill Level (Optional)</label>
-                                <p className="input-hint">The AI will assess this if you skip</p>
-                                <div className="skill-options">
-                                    {[
-                                        { value: '', label: 'Let AI assess' },
-                                        { value: 'beginner', label: 'Beginner' },
-                                        { value: 'intermediate', label: 'Intermediate' },
-                                        { value: 'advanced', label: 'Advanced' },
-                                    ].map((option) => (
-                                        <button
-                                            key={option.value}
-                                            type="button"
-                                            className={`skill-btn ${skillLevel === option.value ? 'selected' : ''}`}
-                                            onClick={() => setSkillLevel(option.value)}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="input-group">
-                                <label className="input-label">How often will you work on this?</label>
-                                <div className="cadence-options">
-                                    {[
-                                        { value: 'daily', label: 'Daily', desc: '7 days/week' },
-                                        { value: '3x_week', label: '3x per week', desc: 'Flexible days' },
-                                        { value: 'weekdays', label: 'Weekdays only', desc: 'Mon-Fri' },
-                                        { value: 'weekly', label: 'Weekly', desc: 'Once per week' },
-                                    ].map((option) => (
-                                        <button
-                                            key={option.value}
-                                            type="button"
-                                            className={`cadence-btn ${cadence === option.value ? 'selected' : ''}`}
-                                            onClick={() => setCadence(option.value)}
-                                        >
-                                            <span className="cadence-label">{option.label}</span>
-                                            <span className="cadence-desc">{option.desc}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {step === 3 && (
-                        <div className="step-content">
-                            <div className="input-group">
-                                <label className="input-label">What resources are you using? (Optional)</label>
-                                <p className="input-hint">Book titles, course URLs, YouTube channels you follow</p>
-
-                                <div className="source-input-group">
-                                    <select
-                                        className="input source-type-select"
-                                        value={newSourceType}
-                                        onChange={(e) => setNewSourceType(e.target.value)}
+                {step === 2 && (
+                    <div className="step-content">
+                        <div className="input-group">
+                            <label className="input-label">Current Skill Level (Optional)</label>
+                            <p className="input-hint">The AI will assess this if you skip</p>
+                            <div className="skill-options">
+                                {[
+                                    { value: '', label: 'Let AI assess' },
+                                    { value: 'beginner', label: 'Beginner' },
+                                    { value: 'intermediate', label: 'Intermediate' },
+                                    { value: 'advanced', label: 'Advanced' },
+                                ].map((option) => (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        className={`skill-btn ${skillLevel === option.value ? 'selected' : ''}`}
+                                        onClick={() => setSkillLevel(option.value)}
                                     >
-                                        <option value="book">Book</option>
-                                        <option value="url">Course/URL</option>
-                                        <option value="youtube">YouTube Channel</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                    <div className="source-value-row">
-                                        <input
-                                            className="input source-value-input"
-                                            placeholder={newSourceType === 'book' ? 'Book title' : 'URL or name'}
-                                            value={newSourceValue}
-                                            onChange={(e) => setNewSourceValue(e.target.value)}
-                                            onKeyPress={(e) => e.key === 'Enter' && addSource()}
-                                        />
-                                        <button type="button" className="btn btn-secondary" onClick={addSource}>
-                                            <Plus size={18} />
-                                        </button>
-                                    </div>
-                                </div>
+                                        {option.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
-                                {sources.length > 0 && (
-                                    <div className="sources-list">
-                                        {sources.map((source, i) => (
-                                            <div key={i} className="source-item">
-                                                <span className="source-type">{source.type}</span>
-                                                <span className="source-value">{source.title || source.value}</span>
-                                                <button type="button" className="source-remove" onClick={() => removeSource(i)}>
-                                                    <X size={14} />
-                                                </button>
-                                            </div>
-                                        ))}
+                        <div className="input-group">
+                            <label className="input-label">How often will you work on this?</label>
+                            <div className="cadence-options">
+                                {[
+                                    { value: 'daily', label: 'Daily', desc: '7 days/week' },
+                                    { value: '3x_week', label: '3x per week', desc: 'Flexible days' },
+                                    { value: 'weekdays', label: 'Weekdays only', desc: 'Mon-Fri' },
+                                    { value: 'weekly', label: 'Weekly', desc: 'Once per week' },
+                                ].map((option) => (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        className={`cadence-btn ${cadence === option.value ? 'selected' : ''}`}
+                                        onClick={() => {
+                                            setCadence(option.value)
+                                            setNegotiationResult(null)
+                                        }}
+                                    >
+                                        <span className="cadence-label">{option.label}</span>
+                                        <span className="cadence-desc">{option.desc}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {negotiationResult && !negotiationResult.is_feasible && (
+                            <div className="negotiation-card">
+                                <div className="negotiation-header">
+                                    <Brain size={20} className="negotiation-icon" />
+                                    <h3>Reality Check</h3>
+                                </div>
+                                <p className="negotiation-feedback">{negotiationResult.feedback}</p>
+                                {negotiationResult.suggestion && (
+                                    <div className="negotiation-suggestion">
+                                        <p><strong>AI Suggestion:</strong> {negotiationResult.suggestion.reason}</p>
+                                        <div className="negotiation-actions">
+                                            <button
+                                                type="button"
+                                                className="btn btn-secondary btn-sm"
+                                                onClick={applySuggestion}
+                                            >
+                                                Apply {CADENCE_LABELS[negotiationResult.suggestion.cadence]}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn btn-ghost btn-sm"
+                                                onClick={handleSubmit}
+                                            >
+                                                Keep My Plan
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
-
-                                <button
-                                    type="button"
-                                    className={`skip-sources-btn ${sources.length === 0 ? 'visible' : ''} ${skipResources ? 'selected' : ''}`}
-                                    onClick={() => setSkipResources(!skipResources)}
-                                >
-                                    <span>I'll figure it out as I go</span>
-                                </button>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
 
-                <div className="modal-actions">
-                    {step > 1 && (
-                        <button type="button" onClick={() => setStep(step - 1)} className="btn btn-secondary">
-                            Back
-                        </button>
-                    )}
+            </div>
 
-                    {step < 3 ? (
-                        <button
-                            type="button"
-                            onClick={() => setStep(step + 1)}
-                            className="btn btn-primary"
-                            disabled={step === 1 && goalStatement.length < 10}
-                        >
-                            Continue
-                            <ChevronRight size={18} />
-                        </button>
+            <div className="modal-actions">
+                {step > 1 && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setStep(step - 1)
+                            setNegotiationResult(null)
+                        }}
+                        className="btn btn-secondary"
+                        disabled={loading || negotiating}
+                    >
+                        Back
+                    </button>
+                )}
+                <button
+                    type="button"
+                    onClick={handleNext}
+                    className="btn btn-primary"
+                    disabled={loading || negotiating || (step === 1 && goalStatement.length < 10)}
+                >
+                    {loading || negotiating ? (
+                        <>
+                            <Loader2 className="animate-spin" size={18} />
+                            {negotiating ? 'Checking...' : 'Creating...'}
+                        </>
                     ) : (
-                        <button
-                            type="button"
-                            onClick={handleSubmit}
-                            className="btn btn-primary"
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="animate-spin" size={18} />
-                                    Creating...
-                                </>
-                            ) : (
-                                <>
-                                    <Plus size={18} />
-                                    Create Resolution
-                                </>
-                            )}
-                        </button>
+                        <>
+                            {step === 2 ? 'Finish' : 'Continue'}
+                            <ChevronRight size={18} />
+                        </>
                     )}
-                </div>
+                </button>
             </div>
         </div>
-    )
+    </div>
+)
 }

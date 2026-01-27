@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = True
 
+    # Local Database Settings (Used when ENVIRONMENT="development")
+    db_user: str = "postgres"
+    db_password: str = "postgres"
+    db_host: str = "localhost"
+    db_port: int = 5432
+    db_name: str = "neuroresolv"
+
     # CORS Origins (for frontend)
     # Include localhost for local dev and Vercel domains for production
     cors_origins: list[str] = [

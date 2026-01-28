@@ -27,13 +27,19 @@ def create_database_if_not_exists() -> bool:
         secret_name=settings.db_secret_name,
         region_name=settings.aws_region,
     )
+
+    encoded_password = quote_plus(creds["password"])
     target_db = creds["dbname"]
 
     # Connect to the default 'postgres' database to create the target database
+    # TODO: Fix this redundant code
+    # admin_url = (
+    #     f"postgresql+psycopg2://{creds['username']}:{encoded_password}"
+    #     f"@{creds['host']}:{creds['port']}/postgres"
+    # )
     admin_url = get_sync_database_url()
 
     engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
-    
     try:
         with engine.connect() as conn:
             # Check if database exists

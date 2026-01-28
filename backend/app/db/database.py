@@ -70,7 +70,7 @@ def get_sync_database_url() -> str:
         PostgreSQL connection URL for psycopg2 driver
     """
     settings = get_settings()
-    
+    print(settings.environment)
     if settings.environment == "production":
         creds_fetch = get_db_credentials(
             secret_name=settings.db_secret_name,

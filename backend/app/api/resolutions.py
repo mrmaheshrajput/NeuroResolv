@@ -13,6 +13,7 @@ from app.schemas import (
     MilestoneResponse,
     NegotiationRequest,
     NegotiationResponse,
+    MilestoneUpdate,
 )
 from app.agents import generate_roadmap, analyze_feasibility
 

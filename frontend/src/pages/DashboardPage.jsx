@@ -199,26 +199,61 @@ function CreateResolutionModal({ onClose, onCreated }) {
     const [category, setCategory] = useState('learning')
     const [skillLevel, setSkillLevel] = useState('')
     const [cadence, setCadence] = useState('daily')
-    const [sources, setSources] = useState([])
-    const [newSourceType, setNewSourceType] = useState('book')
-    const [newSourceValue, setNewSourceValue] = useState('')
-    const [skipResources, setSkipResources] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [negotiating, setNegotiating] = useState(false)
+    const [negotiationResult, setNegotiationResult] = useState(null)
     const [error, setError] = useState('')
 
-    function addSource() {
-        if (!newSourceValue.trim()) return
+    async function handleNext() {
+        if (step === 1) {
+            setStep(2)
+            return
+        }
 
-        setSources([...sources, {
-            type: newSourceType,
-            title: newSourceType === 'book' ? newSourceValue : null,
-            value: newSourceType !== 'book' ? newSourceValue : null,
-        }])
-        setNewSourceValue('')
+        if (step === 2) {
+            setNegotiating(true)
+            setError('')
+            try {
+                const result = await api.negotiateResolution({
+                    goal_statement: goalStatement,
+                    category,
+                    skill_level: skillLevel || null,
+                    cadence,
+                })
+                setNegotiationResult(result)
+                if (!result.is_feasible) {
+                    // Stay on step 2 but show negotiation
+                } else {
+                    handleSubmit()
+                }
+            } catch (err) {
+                setError(err.message)
+            } finally {
+                setNegotiating(false)
+            }
+        }
     }
 
-    function removeSource(index) {
-        setSources(sources.filter((_, i) => i !== index))
+    async function applySuggestion() {
+        if (negotiationResult?.suggestion) {
+            setCadence(negotiationResult.suggestion.cadence)
+            setNegotiationResult(null)
+            // Re-negotiate or just submit? Let's just submit with the new cadence to be fast
+            setLoading(true)
+            try {
+                const resolution = await api.createResolution({
+                    goal_statement: goalStatement,
+                    category,
+                    skill_level: skillLevel || null,
+                    cadence: negotiationResult.suggestion.cadence,
+                })
+                onCreated(resolution)
+            } catch (err) {
+                setError(err.message)
+            } finally {
+                setLoading(false)
+            }
+        }
     }
 
     async function handleSubmit() {
@@ -236,7 +271,6 @@ function CreateResolutionModal({ onClose, onCreated }) {
                 category,
                 skill_level: skillLevel || null,
                 cadence,
-                learning_sources: sources,
             })
             onCreated(resolution)
         } catch (err) {
@@ -261,7 +295,6 @@ function CreateResolutionModal({ onClose, onCreated }) {
                 <div className="modal-steps">
                     <div className={`step ${step >= 1 ? 'active' : ''}`}>1. Goal</div>
                     <div className={`step ${step >= 2 ? 'active' : ''}`}>2. Details</div>
-                    <div className={`step ${step >= 3 ? 'active' : ''}`}>3. Resources</div>
                 </div>
 
                 <div className="modal-form">
@@ -338,7 +371,10 @@ function CreateResolutionModal({ onClose, onCreated }) {
                                             key={option.value}
                                             type="button"
                                             className={`cadence-btn ${cadence === option.value ? 'selected' : ''}`}
-                                            onClick={() => setCadence(option.value)}
+                                            onClick={() => {
+                                                setCadence(option.value)
+                                                setNegotiationResult(null)
+                                            }}
                                         >
                                             <span className="cadence-label">{option.label}</span>
                                             <span className="cadence-desc">{option.desc}</span>
@@ -346,103 +382,74 @@ function CreateResolutionModal({ onClose, onCreated }) {
                                     ))}
                                 </div>
                             </div>
-                        </div>
-                    )}
 
-                    {step === 3 && (
-                        <div className="step-content">
-                            <div className="input-group">
-                                <label className="input-label">What resources are you using? (Optional)</label>
-                                <p className="input-hint">Book titles, course URLs, YouTube channels you follow</p>
-
-                                <div className="source-input-group">
-                                    <select
-                                        className="input source-type-select"
-                                        value={newSourceType}
-                                        onChange={(e) => setNewSourceType(e.target.value)}
-                                    >
-                                        <option value="book">Book</option>
-                                        <option value="url">Course/URL</option>
-                                        <option value="youtube">YouTube Channel</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                    <div className="source-value-row">
-                                        <input
-                                            className="input source-value-input"
-                                            placeholder={newSourceType === 'book' ? 'Book title' : 'URL or name'}
-                                            value={newSourceValue}
-                                            onChange={(e) => setNewSourceValue(e.target.value)}
-                                            onKeyPress={(e) => e.key === 'Enter' && addSource()}
-                                        />
-                                        <button type="button" className="btn btn-secondary" onClick={addSource}>
-                                            <Plus size={18} />
-                                        </button>
+                            {negotiationResult && !negotiationResult.is_feasible && (
+                                <div className="negotiation-card">
+                                    <div className="negotiation-header">
+                                        <Brain size={20} className="negotiation-icon" />
+                                        <h3>Reality Check</h3>
                                     </div>
-                                </div>
-
-                                {sources.length > 0 && (
-                                    <div className="sources-list">
-                                        {sources.map((source, i) => (
-                                            <div key={i} className="source-item">
-                                                <span className="source-type">{source.type}</span>
-                                                <span className="source-value">{source.title || source.value}</span>
-                                                <button type="button" className="source-remove" onClick={() => removeSource(i)}>
-                                                    <X size={14} />
+                                    <p className="negotiation-feedback">{negotiationResult.feedback}</p>
+                                    {negotiationResult.suggestion && (
+                                        <div className="negotiation-suggestion">
+                                            <p><strong>AI Suggestion:</strong> {negotiationResult.suggestion.reason}</p>
+                                            <div className="negotiation-actions">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-secondary btn-sm"
+                                                    onClick={applySuggestion}
+                                                >
+                                                    Apply {CADENCE_LABELS[negotiationResult.suggestion.cadence]}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-ghost btn-sm"
+                                                    onClick={handleSubmit}
+                                                >
+                                                    Keep My Plan
                                                 </button>
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                <button
-                                    type="button"
-                                    className={`skip-sources-btn ${sources.length === 0 ? 'visible' : ''} ${skipResources ? 'selected' : ''}`}
-                                    onClick={() => setSkipResources(!skipResources)}
-                                >
-                                    <span>I'll figure it out as I go</span>
-                                </button>
-                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
+
                 </div>
 
                 <div className="modal-actions">
                     {step > 1 && (
-                        <button type="button" onClick={() => setStep(step - 1)} className="btn btn-secondary">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setStep(step - 1)
+                                setNegotiationResult(null)
+                            }}
+                            className="btn btn-secondary"
+                            disabled={loading || negotiating}
+                        >
                             Back
                         </button>
                     )}
-
-                    {step < 3 ? (
-                        <button
-                            type="button"
-                            onClick={() => setStep(step + 1)}
-                            className="btn btn-primary"
-                            disabled={step === 1 && goalStatement.length < 10}
-                        >
-                            Continue
-                            <ChevronRight size={18} />
-                        </button>
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={handleSubmit}
-                            className="btn btn-primary"
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="animate-spin" size={18} />
-                                    Creating...
-                                </>
-                            ) : (
-                                <>
-                                    <Plus size={18} />
-                                    Create Resolution
-                                </>
-                            )}
-                        </button>
-                    )}
+                    <button
+                        type="button"
+                        onClick={handleNext}
+                        className="btn btn-primary"
+                        disabled={loading || negotiating || (step === 1 && goalStatement.length < 10)}
+                    >
+                        {loading || negotiating ? (
+                            <>
+                                <Loader2 className="animate-spin" size={18} />
+                                {negotiating ? 'Checking...' : 'Creating...'}
+                            </>
+                        ) : (
+                            <>
+                                {step === 2 ? 'Finish' : 'Continue'}
+                                <ChevronRight size={18} />
+                            </>
+                        )}
+                    </button>
                 </div>
             </div>
         </div>

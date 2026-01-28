@@ -22,18 +22,36 @@ class Base(DeclarativeBase):
 @lru_cache(maxsize=1)
 def get_database_url() -> str:
     """
-    Build the PostgreSQL database URL from AWS Secrets Manager credentials.
+    Build the PostgreSQL database URL.
 
-    Uses lru_cache to cache the URL since credentials don't change often.
+    - In production: Uses credentials fetched from AWS Secrets Manager.
+    - Otherwise: Uses local credentials from environment variables.
 
     Returns:
         PostgreSQL connection URL for asyncpg driver
     """
     settings = get_settings()
-    creds = get_db_credentials(
-        secret_name=settings.db_secret_name,
-        region_name=settings.aws_region,
-    )
+    
+    if settings.environment == "production":
+        creds_fetch = get_db_credentials(
+            secret_name=settings.db_secret_name,
+            region_name=settings.aws_region,
+        )
+        creds = {
+            "username": creds_fetch["username"],
+            "password": creds_fetch["password"],
+            "host": creds_fetch["host"],
+            "port": str(creds_fetch["port"]),
+            "dbname": creds_fetch["dbname"],
+        }
+    else:
+        creds = {
+            "username": settings.db_user,
+            "password": settings.db_password,
+            "host": settings.db_host,
+            "port": str(settings.db_port),
+            "dbname": settings.db_name,
+        }
 
     # URL-encode password to handle special characters
     encoded_password = quote_plus(creds["password"])
@@ -52,10 +70,27 @@ def get_sync_database_url() -> str:
         PostgreSQL connection URL for psycopg2 driver
     """
     settings = get_settings()
-    creds = get_db_credentials(
-        secret_name=settings.db_secret_name,
-        region_name=settings.aws_region,
-    )
+
+    if settings.environment == "production":
+        creds_fetch = get_db_credentials(
+            secret_name=settings.db_secret_name,
+            region_name=settings.aws_region,
+        )
+        creds = {
+            "username": creds_fetch["username"],
+            "password": creds_fetch["password"],
+            "host": creds_fetch["host"],
+            "port": str(creds_fetch["port"]),
+            "dbname": creds_fetch["dbname"],
+        }
+    else:
+        creds = {
+            "username": settings.db_user,
+            "password": settings.db_password,
+            "host": settings.db_host,
+            "port": str(settings.db_port),
+            "dbname": settings.db_name,
+        }
 
     # URL-encode password to handle special characters
     encoded_password = quote_plus(creds["password"])

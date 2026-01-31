@@ -41,7 +41,11 @@ class ApiClient {
                 window.location.href = '/login'
             }
             const error = await response.json().catch(() => ({ detail: 'An error occurred' }))
-            throw new Error(error.detail || 'Request failed')
+            let message = error.detail || 'Request failed'
+            if (typeof message === 'object') {
+                message = JSON.stringify(message)
+            }
+            throw new Error(message)
         }
 
         return response.json()
@@ -161,6 +165,86 @@ class ApiClient {
                 audio_base64: audioBase64,
                 duration_seconds: durationSeconds,
             }),
+        })
+    }
+
+    async generateWeeklyGoal(resolutionId) {
+        return this.request(`/resolutions/${resolutionId}/weekly-goal`, {
+            method: 'POST',
+        })
+    }
+
+    async getWeeklyGoal(resolutionId) {
+        return this.request(`/resolutions/${resolutionId}/weekly-goal`)
+    }
+
+    async dismissWeeklyGoal(resolutionId) {
+        return this.request(`/resolutions/${resolutionId}/weekly-goal/dismiss`, {
+            method: 'POST',
+        })
+    }
+
+    async getAggregatedWeeklyFocus() {
+        return this.request('/resolutions/weekly-goal/aggregated')
+    }
+
+    async dismissAggregatedFocus(focusId) {
+        return this.request(`/resolutions/weekly-focused/${focusId}/dismiss`, {
+            method: 'PUT'
+        })
+    }
+
+    async generateNorthStar(resolutionId) {
+        return this.request(`/resolutions/${resolutionId}/north-star`, {
+            method: 'POST',
+        })
+    }
+
+    async getNorthStar(resolutionId) {
+        return this.request(`/resolutions/${resolutionId}/north-star`)
+    }
+
+    async updateNorthStar(resolutionId, data) {
+        return this.request(`/resolutions/${resolutionId}/north-star`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        })
+    }
+
+    async getLivingRoadmap(resolutionId) {
+        return this.request(`/resolutions/${resolutionId}/roadmap/living`)
+    }
+
+    async refreshLivingRoadmap(resolutionId) {
+        return this.request(`/resolutions/${resolutionId}/roadmap/refresh`, {
+            method: 'POST',
+        })
+    }
+
+    async setRoadmapMode(resolutionId, mode) {
+        return this.request(`/resolutions/${resolutionId}/roadmap-mode`, {
+            method: 'PUT',
+            body: JSON.stringify({ mode }),
+        })
+    }
+
+    async saveManualRoadmap(resolutionId, milestones) {
+        return this.request(`/resolutions/${resolutionId}/manual-roadmap`, {
+            method: 'PUT',
+            body: JSON.stringify({ milestones }),
+        })
+    }
+
+    async submitAIFeedback(data) {
+        return this.request('/resolutions/ai-feedback', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        })
+    }
+
+    async regenerateFromFeedback(feedbackId) {
+        return this.request(`/resolutions/ai-feedback/${feedbackId}/regenerate`, {
+            method: 'POST',
         })
     }
 }

@@ -1,14 +1,14 @@
 import json
 import os
 from typing import Optional
+
+from app.config import get_settings
+from app.observability import track_llm_call
+from app.services import query_collection
 from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
-
-from app.config import get_settings
-from app.services import query_collection
-from app.observability import track_llm_call
 
 settings = get_settings()
 

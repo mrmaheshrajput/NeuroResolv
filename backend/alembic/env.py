@@ -7,13 +7,10 @@ Uses synchronous migrations with psycopg2 driver.
 
 from logging.config import fileConfig
 
-from sqlalchemy import pool
-from sqlalchemy import create_engine
-
 from alembic import context
-
 from app.db.database import Base, get_sync_database_url
 from app.db.models import *  # noqa: F401, F403 - Import all models for metadata
+from sqlalchemy import create_engine, pool
 
 config = context.config
 

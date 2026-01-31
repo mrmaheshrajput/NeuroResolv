@@ -1,10 +1,9 @@
 import json
-from google import genai
-from google.genai import types
 
 from app.config import get_settings
 from app.observability import track_llm_call
-
+from google import genai
+from google.genai import types
 
 settings = get_settings()
 client = genai.Client(api_key=settings.google_api_key)

@@ -401,3 +401,175 @@
         flex-direction: column;
     }
 }
+
+.edit-roadmap-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-top: var(--space-4);
+}
+
+.edit-milestone-card {
+    background: var(--dark-surface-2);
+    border: 1px solid var(--dark-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.remove-milestone-btn {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    color: var(--gray-500);
+    padding: var(--space-1);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.remove-milestone-btn:hover {
+    color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.milestone-edit-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.milestone-index {
+    width: 24px;
+    height: 24px;
+    background: var(--dark-surface-3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--gray-400);
+}
+
+.edit-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--space-6);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--dark-border);
+}
+
+.edit-actions-right {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.input-sm {
+    padding: var(--space-2) var(--space-3);
+    font-size: 0.875rem;
+}
+
+/* North Star & Living Roadmap Styles */
+.stat-card.likelihood {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(167, 139, 250, 0.1));
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.stat-card.likelihood .stat-icon {
+    color: #a78bfa;
+}
+
+.north-star-section {
+    margin-bottom: var(--space-8);
+    background: linear-gradient(135deg, var(--dark-surface), rgba(99, 102, 241, 0.05));
+    border: 1px solid var(--dark-border);
+    border-radius: var(--radius-2xl);
+    padding: var(--space-6) var(--space-8);
+    position: relative;
+    overflow: hidden;
+}
+
+.north-star-section::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.north-star-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.north-star-header h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--gray-200);
+    margin: 0;
+}
+
+.north-star-icon {
+    color: var(--primary-400);
+}
+
+.north-star-content {
+    font-size: 1.25rem;
+    line-height: 1.6;
+    color: var(--gray-100);
+    font-style: italic;
+    font-weight: 500;
+    margin-bottom: var(--space-4);
+}
+
+.north-star-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.north-star-meta {
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+}
+
+.milestone-footer {
+    margin-top: var(--space-4);
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid var(--dark-border);
+    padding-top: var(--space-3);
+}
+
+.likelihood-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.likelihood-high {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+}
+
+.likelihood-medium {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
+.likelihood-low {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}

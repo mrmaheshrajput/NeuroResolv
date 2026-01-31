@@ -1,31 +1,24 @@
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload
 
-from app.db import (
-    get_db,
-    User,
-    Resolution,
-    DailySession,
-    Quiz,
-    QuizQuestion,
-    QuizResponse as QuizResponseModel,
-    LearningMetric,
-)
+from app.agents import adapt_learning_path, generate_quiz, grade_short_answer
 from app.core import get_current_user
+from app.db import DailySession, LearningMetric, Quiz, QuizQuestion
+from app.db import QuizResponse as QuizResponseModel
+from app.db import Resolution, User, get_db
+from app.observability import evaluate_quiz_quality, track_learning_progression
 from app.schemas import (
     DailySessionResponse,
-    QuizResponse,
     QuizQuestionResponse,
-    QuizSubmission,
+    QuizResponse,
     QuizResultResponse,
+    QuizSubmission,
 )
-from app.agents import generate_quiz, grade_short_answer, adapt_learning_path
-from app.observability import evaluate_quiz_quality, track_learning_progression
 from app.services import query_collection
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/sessions", tags=["Learning Sessions"])
 

@@ -6,13 +6,13 @@ Used during container startup before running migrations.
 """
 
 import sys
-from sqlalchemy import create_engine, text
-from sqlalchemy.exc import ProgrammingError
 from urllib.parse import quote_plus
 
+from app.aws.secrets import get_db_credentials
 from app.config import get_settings
 from app.db.database import get_sync_database_url
-from app.aws.secrets import get_db_credentials
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import ProgrammingError
 
 
 def create_database_if_not_exists() -> bool:

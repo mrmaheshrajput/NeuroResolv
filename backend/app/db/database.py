@@ -8,11 +8,10 @@ using credentials fetched from AWS Secrets Manager.
 from functools import lru_cache
 from urllib.parse import quote_plus
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
-
-from app.config import get_settings
 from app.aws.secrets import get_db_credentials
+from app.config import get_settings
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
 
 
 class Base(DeclarativeBase):

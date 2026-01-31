@@ -1,8 +1,10 @@
 from __future__ import annotations
-from datetime import datetime, date
-from typing import List, Optional
-from pydantic import BaseModel, EmailStr, Field
+
+from datetime import date, datetime
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserCreate(BaseModel):
@@ -162,6 +164,7 @@ class ProgressLogResponse(BaseModel):
     concepts_claimed: list
     verified: bool
     verification_score: Optional[float]
+    quiz_completed: bool = False
     created_at: datetime
 
     class Config:
@@ -252,3 +255,107 @@ class VoiceNoteUpload(BaseModel):
 class TranscriptionResponse(BaseModel):
     text: str
     duration_seconds: Optional[int]
+
+
+class RoadmapMode(str, Enum):
+    AI_GENERATED = "ai_generated"
+    MANUAL = "manual"
+    STREAK_ONLY = "streak_only"
+
+
+class WeeklyGoalResponse(BaseModel):
+    id: int
+    resolution_id: int
+    goal_text: str
+    week_start: date
+    week_end: date
+    is_dismissed: bool
+    is_completed: bool
+    micro_actions: Optional[List[str]] = None
+    motivation_note: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class NorthStarResponse(BaseModel):
+    id: int
+    resolution_id: int
+    goal_statement: str
+    target_date: date
+    is_ai_generated: bool
+    is_edited: bool
+    key_transformations: Optional[List[str]] = None
+    identity_shift: Optional[str] = None
+    why_it_matters: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class NorthStarUpdate(BaseModel):
+    goal_statement: Optional[str] = None
+    key_transformations: Optional[List[str]] = None
+    identity_shift: Optional[str] = None
+
+
+class AIFeedbackCreate(BaseModel):
+    content_type: str  # roadmap, weekly_goal, north_star
+    content_id: int
+    rating: str  # thumbs_up, thumbs_down
+    feedback_text: Optional[str] = None
+
+
+class AIFeedbackResponse(BaseModel):
+    id: int
+    content_type: str
+    content_id: int
+    rating: str
+    feedback_text: Optional[str]
+    was_regenerated: bool
+
+    class Config:
+        from_attributes = True
+
+
+class RegeneratedContentResponse(BaseModel):
+    original_feedback_id: int
+    new_content_id: int
+    content_type: str
+
+
+class RoadmapModeUpdate(BaseModel):
+    mode: RoadmapMode
+
+
+class ManualMilestoneCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=500)
+    description: str
+    verification_criteria: str
+    target_date: Optional[date] = None
+
+
+class ManualRoadmapCreate(BaseModel):
+    milestones: List[ManualMilestoneCreate]
+
+
+class LivingRoadmapResponse(BaseModel):
+    resolution_id: int
+    milestones: List[MilestoneResponse]
+    needs_refresh: bool
+    likelihood_score: Optional[float] = None
+    next_refresh: Optional[datetime] = None
+    overall_assessment: Optional[str] = None
+
+
+class AggregatedWeeklyFocusResponse(BaseModel):
+    id: int
+    focus_text: str
+    micro_actions: List[str]
+    motivation_note: Optional[str] = None
+    week_start: date
+    week_end: date
+    is_dismissed: bool
+
+    class Config:
+        from_attributes = True

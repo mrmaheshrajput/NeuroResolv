@@ -1,19 +1,19 @@
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import (
-    String,
-    Text,
-    Integer,
-    Float,
-    Boolean,
-    DateTime,
-    ForeignKey,
-    JSON,
-    Date,
-)
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class User(Base):
@@ -50,6 +50,14 @@ class Resolution(Base):
     roadmap_generated: Mapped[bool] = mapped_column(Boolean, default=False)
     roadmap_needs_refresh: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    roadmap_mode: Mapped[str] = mapped_column(
+        String(50), default="ai_generated"
+    )  # ai_generated, manual, streak_only
+    goal_likelihood_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    next_roadmap_refresh: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
@@ -63,6 +71,12 @@ class Resolution(Base):
         back_populates="resolution", cascade="all, delete-orphan"
     )
     streak: Mapped[Optional["Streak"]] = relationship(
+        back_populates="resolution", uselist=False, cascade="all, delete-orphan"
+    )
+    weekly_goals: Mapped[list["WeeklyGoal"]] = relationship(
+        back_populates="resolution", cascade="all, delete-orphan"
+    )
+    north_star: Mapped[Optional["NorthStarGoal"]] = relationship(
         back_populates="resolution", uselist=False, cascade="all, delete-orphan"
     )
 
@@ -173,3 +187,94 @@ class WeeklyReflection(Base):
 
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class WeeklyGoal(Base):
+    """AI-generated weekly suggestion for near-term focus"""
+
+    __tablename__ = "weekly_goals"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    resolution_id: Mapped[int] = mapped_column(ForeignKey("resolutions.id"), index=True)
+
+    goal_text: Mapped[str] = mapped_column(Text)
+    week_start: Mapped[datetime] = mapped_column(Date)
+    week_end: Mapped[datetime] = mapped_column(Date)
+
+    is_dismissed: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    resolution: Mapped["Resolution"] = relationship(back_populates="weekly_goals")
+
+
+class NorthStarGoal(Base):
+    """End-of-year vision representing user's transformation journey"""
+
+    __tablename__ = "north_star_goals"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    resolution_id: Mapped[int] = mapped_column(
+        ForeignKey("resolutions.id"), unique=True, index=True
+    )
+
+    goal_statement: Mapped[str] = mapped_column(Text)
+    target_date: Mapped[datetime] = mapped_column(Date)
+
+    is_ai_generated: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_edited: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    resolution: Mapped["Resolution"] = relationship(back_populates="north_star")
+
+
+class AIFeedback(Base):
+    """User feedback on AI-generated content for improvement"""
+
+    __tablename__ = "ai_feedback"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+
+    content_type: Mapped[str] = mapped_column(
+        String(50)
+    )  # roadmap, weekly_goal, north_star
+    content_id: Mapped[int] = mapped_column(Integer)
+
+    rating: Mapped[str] = mapped_column(String(20))  # thumbs_up, thumbs_down
+    feedback_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    was_regenerated: Mapped[bool] = mapped_column(Boolean, default=False)
+    regenerated_content_id: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True
+    )
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    user: Mapped["User"] = relationship()
+
+
+class UserWeeklyFocus(Base):
+    """AI-generated combined weekly focus for users with multiple resolutions"""
+
+    __tablename__ = "user_weekly_focus"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+
+    focus_text: Mapped[str] = mapped_column(Text)
+    micro_actions: Mapped[list] = mapped_column(JSON, default=list)
+    motivation_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    week_start: Mapped[datetime] = mapped_column(Date)
+    week_end: Mapped[datetime] = mapped_column(Date)
+
+    is_dismissed: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    user: Mapped["User"] = relationship()

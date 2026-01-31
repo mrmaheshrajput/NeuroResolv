@@ -1,13 +1,12 @@
 from contextlib import asynccontextmanager
+
+from app.api import auth_router, progress_router, resolutions_router
+from app.config import get_settings
+from app.db import create_tables
+from app.observability import init_opik
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
-from app.config import get_settings
-from app.db import create_tables
-from app.api import auth_router, resolutions_router, progress_router
-from app.observability import init_opik
-
 
 settings = get_settings()
 
@@ -29,9 +28,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"]
-    if settings.environment != "development"
-    else settings.cors_origins,
+    allow_origins=(
+        ["*"] if settings.environment != "development" else settings.cors_origins
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

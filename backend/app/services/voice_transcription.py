@@ -1,10 +1,9 @@
 import base64
-import tempfile
 import os
-from openai import AsyncOpenAI
+import tempfile
 
 from app.config import get_settings
-
+from openai import AsyncOpenAI
 
 settings = get_settings()
 

@@ -4,7 +4,7 @@ This directory contains background tasks and scripts for the NeuroResolv applica
 
 ## Available Tasks
 
-Currently, the application uses inline async operations for all tasks. 
+Currently, the application uses inline async operations for all tasks.
 Future background tasks can be added here if needed:
 
 - Batch content processing

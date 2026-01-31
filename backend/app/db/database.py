@@ -31,7 +31,7 @@ def get_database_url() -> str:
         PostgreSQL connection URL for asyncpg driver
     """
     settings = get_settings()
-    
+
     if settings.environment == "production":
         creds_fetch = get_db_credentials(
             secret_name=settings.db_secret_name,

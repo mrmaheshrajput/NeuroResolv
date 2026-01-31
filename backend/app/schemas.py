@@ -1,5 +1,6 @@
+from __future__ import annotations
 from datetime import datetime, date
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel, EmailStr, Field
 from enum import Enum
 
@@ -21,7 +22,7 @@ class UserResponse(BaseModel):
     full_name: str
     is_active: bool
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -54,16 +55,26 @@ class Cadence(str, Enum):
     WEEKLY = "weekly"
 
 
+class ExistingResolutionContext(BaseModel):
+    goal_statement: str
+    category: GoalCategory
+    cadence: Cadence
+
 
 class NegotiationRequest(BaseModel):
     goal_statement: str
     category: GoalCategory
     skill_level: Optional[SkillLevel] = None
     cadence: Cadence
+    other_resolutions: Optional[List[ExistingResolutionContext]] = Field(
+        default_factory=list
+    )
+
 
 class NegotiationSuggestion(BaseModel):
     cadence: Cadence
     reason: str
+
 
 class NegotiationResponse(BaseModel):
     is_feasible: bool
@@ -92,7 +103,7 @@ class ResolutionResponse(BaseModel):
     roadmap_needs_refresh: bool
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -122,7 +133,7 @@ class MilestoneResponse(BaseModel):
     status: str
     is_edited: bool
     completed_at: Optional[datetime]
-    
+
     class Config:
         from_attributes = True
 
@@ -152,7 +163,7 @@ class ProgressLogResponse(BaseModel):
     verified: bool
     verification_score: Optional[float]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -173,7 +184,7 @@ class VerificationQuizResponse(BaseModel):
     is_completed: bool
     score: Optional[float]
     passed: Optional[bool]
-    
+
     class Config:
         from_attributes = True
 
@@ -204,7 +215,7 @@ class StreakResponse(BaseModel):
     total_verified_days: int
     last_log_date: Optional[date]
     last_verified_date: Optional[date]
-    
+
     class Config:
         from_attributes = True
 

@@ -17,6 +17,7 @@ Analyze the feasibility of the goal based on:
 1. Goal Statement: What they want to achieve.
 2. Skill Level: Their current expertise.
 3. Cadence: How often they plan to work on it.
+4. Other resolutions: Other resolutions they have set.
 
 Rules for your analysis:
 - Be encouraging but realistic.
@@ -43,15 +44,27 @@ async def analyze_feasibility(
     category: str,
     skill_level: str | None,
     cadence: str,
+    other_resolutions: list[dict],
 ) -> dict:
+    other_res_summary = ""
+    if other_resolutions:
+        other_res_summary = "\nEXISTING RESOLUTIONS:\n" + "\n".join(
+            [
+                f"- {res['goal_statement']} ({res['category']}, {res['cadence']})"
+                for res in other_resolutions
+            ]
+        )
+
     prompt = f"""Perform a Reality Check on this resolution:
 
 GOAL: {goal_statement}
 CATEGORY: {category}
 SKILL LEVEL: {skill_level or "Beginner (assumed)"}
 CADENCE: {cadence}
+{other_res_summary}
 
-Is this realistic? If not, what would you suggest instead to ensure they don't burn out and actually achieve the goal?"""
+Is this realistic? Consider their total load across all resolutions if they have existing ones.
+If not, what would you suggest instead to ensure they don't burn out and actually achieve the goal?"""
 
     try:
         response = await client.aio.models.generate_content(
@@ -63,14 +76,14 @@ Is this realistic? If not, what would you suggest instead to ensure they don't b
                 response_mime_type="application/json",
             ),
         )
-        
+
         return json.loads(response.text)
-        
+
     except Exception as e:
         # Fallback if LLM fails
         return {
             "is_feasible": True,
             "feedback": "Your plan looks solid! Consistency is key.",
             "suggestion": None,
-            "streak_trigger": "2-week streak"
+            "streak_trigger": "2-week streak",
         }

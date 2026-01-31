@@ -37,22 +37,27 @@ def track_llm_call(name: str):
         if settings.opik_api_key and settings.opik_api_key != "sample-opik-api-key":
             return track(name=name)(func)
         return func
+
     return decorator
 
 
-async def evaluate_quiz_quality(quiz_questions: list[dict], source_content: str) -> dict:
+async def evaluate_quiz_quality(
+    quiz_questions: list[dict], source_content: str
+) -> dict:
     client = get_opik_client()
     if not client:
         return {"quality_score": 0.85, "status": "mock"}
-    
+
     try:
         relevance_scores = []
         for q in quiz_questions:
             score = await _assess_question_relevance(q["question_text"], source_content)
             relevance_scores.append(score)
-        
-        avg_score = sum(relevance_scores) / len(relevance_scores) if relevance_scores else 0
-        
+
+        avg_score = (
+            sum(relevance_scores) / len(relevance_scores) if relevance_scores else 0
+        )
+
         return {
             "quality_score": avg_score,
             "individual_scores": relevance_scores,
@@ -70,14 +75,14 @@ async def evaluate_syllabus_coherence(syllabus: dict) -> dict:
     client = get_opik_client()
     if not client:
         return {"coherence_score": 0.9, "status": "mock"}
-    
+
     try:
         days = syllabus.get("days", [])
         if len(days) < 2:
             return {"coherence_score": 1.0, "status": "evaluated"}
-        
+
         progression_score = _assess_concept_progression(days)
-        
+
         return {
             "coherence_score": progression_score,
             "status": "evaluated",
@@ -100,7 +105,7 @@ async def log_adaptive_decision(
     client = get_opik_client()
     if not client:
         return
-    
+
     try:
         client.log_trace(
             name="adaptive_decision",
@@ -132,7 +137,7 @@ async def track_learning_progression(
     client = get_opik_client()
     if not client:
         return
-    
+
     try:
         client.log_trace(
             name="learning_progression",

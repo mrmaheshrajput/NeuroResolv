@@ -49,10 +49,10 @@ async def generate_verification_quiz(
     previous_concepts: list[str] | None = None,
 ) -> dict:
     search_context = None
-    
+
     if source_reference:
         search_context = await _search_for_context(progress_content, source_reference)
-    
+
     prompt = f"""Generate verification questions for this learning session:
 
 USER'S PROGRESS LOG: "{progress_content}"
@@ -78,21 +78,21 @@ If you can't determine specific content, use open-ended teach-back questions."""
                 response_mime_type="application/json",
             ),
         )
-        
+
         result = json.loads(response.text)
-        
+
         for i, q in enumerate(result.get("questions", [])):
             q["id"] = i + 1
-        
+
         return result
-        
+
     except Exception as e:
         return _generate_fallback_quiz(progress_content)
 
 
 async def _search_for_context(content: str, source: str) -> str | None:
     search_query = f"{source} {content[:100]} key concepts summary"
-    
+
     try:
         response = await client.aio.models.generate_content(
             model="gemini-2.5-flash-lite",
@@ -102,18 +102,18 @@ async def _search_for_context(content: str, source: str) -> str | None:
                 temperature=0.3,
             ),
         )
-        
+
         if response.candidates and response.candidates[0].grounding_metadata:
             chunks = response.candidates[0].grounding_metadata.grounding_chunks
             if chunks:
                 context_parts = []
                 for chunk in chunks[:3]:
-                    if hasattr(chunk, 'web') and chunk.web:
+                    if hasattr(chunk, "web") and chunk.web:
                         context_parts.append(chunk.web.title or "")
                 return " | ".join(context_parts)
-        
+
         return response.text[:500] if response.text else None
-        
+
     except Exception:
         return None
 
@@ -183,13 +183,15 @@ async def grade_verification_quiz(
     qa_pairs = []
     for q in questions:
         answer = next((a for a in answers if a.get("question_id") == q.get("id")), None)
-        qa_pairs.append({
-            "question": q.get("question_text"),
-            "type": q.get("question_type"),
-            "concept": q.get("concept"),
-            "answer": answer.get("answer") if answer else "No answer provided",
-        })
-    
+        qa_pairs.append(
+            {
+                "question": q.get("question_text"),
+                "type": q.get("question_type"),
+                "concept": q.get("concept"),
+                "answer": answer.get("answer") if answer else "No answer provided",
+            }
+        )
+
     prompt = f"""Grade these learning verification responses:
 
 CONTEXT: {context}
@@ -210,9 +212,9 @@ Pass threshold is 60% overall score."""
                 response_mime_type="application/json",
             ),
         )
-        
+
         return json.loads(response.text)
-        
+
     except Exception:
         return {
             "evaluations": [],

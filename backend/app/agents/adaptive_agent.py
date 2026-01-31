@@ -68,9 +68,9 @@ Provide recovery strategies and next steps."""
                 response_mime_type="application/json",
             ),
         )
-        
+
         return json.loads(response.text)
-        
+
     except Exception:
         return {
             "analysis": "Unable to analyze specifics, but continued practice will help.",
@@ -111,11 +111,17 @@ async def generate_weekly_reflection_prompt(
     logs_this_week: list[dict],
     milestone_progress: dict,
 ) -> dict:
-    logs_summary = "\n".join([
-        f"- {log.get('date')}: {log.get('content')[:100]}..."
-        for log in logs_this_week
-    ]) if logs_this_week else "No logs this week"
-    
+    logs_summary = (
+        "\n".join(
+            [
+                f"- {log.get('date')}: {log.get('content')[:100]}..."
+                for log in logs_this_week
+            ]
+        )
+        if logs_this_week
+        else "No logs this week"
+    )
+
     prompt = f"""Generate a personalized weekly reflection prompt.
 
 WEEK NUMBER: {week_number}
@@ -140,9 +146,9 @@ Create a thoughtful reflection prompt for this specific week."""
                 response_mime_type="application/json",
             ),
         )
-        
+
         return json.loads(response.text)
-        
+
     except Exception:
         prompts_by_week = [
             "What was your biggest breakthrough this week? What made it click?",

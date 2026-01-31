@@ -45,7 +45,7 @@ def create_database_if_not_exists() -> bool:
             # Check if database exists
             result = conn.execute(
                 text("SELECT 1 FROM pg_database WHERE datname = :dbname"),
-                {"dbname": target_db}
+                {"dbname": target_db},
             )
             exists = result.scalar() is not None
 

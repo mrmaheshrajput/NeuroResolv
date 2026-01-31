@@ -57,19 +57,20 @@ async def log_progress(
         .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
     )
     resolution = result.scalar_one_or_none()
-    
+
     if not resolution:
         raise HTTPException(status_code=404, detail="Resolution not found")
-    
+
     today = date.today()
-    
+
     existing = await db.execute(
-        select(ProgressLog)
-        .where(ProgressLog.resolution_id == resolution_id, ProgressLog.date == today)
+        select(ProgressLog).where(
+            ProgressLog.resolution_id == resolution_id, ProgressLog.date == today
+        )
     )
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Already logged progress for today")
-    
+
     progress_log = ProgressLog(
         resolution_id=resolution_id,
         date=today,
@@ -78,9 +79,9 @@ async def log_progress(
         source_reference=data.source_reference,
         duration_minutes=data.duration_minutes,
     )
-    
+
     db.add(progress_log)
-    
+
     streak = resolution.streak
     if streak:
         yesterday = today - timedelta(days=1)
@@ -88,14 +89,14 @@ async def log_progress(
             streak.current_streak += 1
         elif streak.last_log_date != today:
             streak.current_streak = 1
-        
+
         streak.last_log_date = today
         if streak.current_streak > streak.longest_streak:
             streak.longest_streak = streak.current_streak
-    
+
     await db.commit()
     await db.refresh(progress_log)
-    
+
     return progress_log
 
 
@@ -106,16 +107,18 @@ async def get_today_progress(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(Resolution)
-        .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
+        select(Resolution).where(
+            Resolution.id == resolution_id, Resolution.user_id == user.id
+        )
     )
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Resolution not found")
-    
+
     today = date.today()
     result = await db.execute(
-        select(ProgressLog)
-        .where(ProgressLog.resolution_id == resolution_id, ProgressLog.date == today)
+        select(ProgressLog).where(
+            ProgressLog.resolution_id == resolution_id, ProgressLog.date == today
+        )
     )
     return result.scalar_one_or_none()
 
@@ -133,10 +136,10 @@ async def generate_progress_verification(
         .where(ProgressLog.id == log_id, Resolution.user_id == user.id)
     )
     progress_log = result.scalar_one_or_none()
-    
+
     if not progress_log:
         raise HTTPException(status_code=404, detail="Progress log not found")
-    
+
     if progress_log.verification_quiz:
         quiz = progress_log.verification_quiz
         return VerificationQuizResponse(
@@ -148,12 +151,12 @@ async def generate_progress_verification(
             score=quiz.score,
             passed=quiz.passed,
         )
-    
+
     resolution_result = await db.execute(
         select(Resolution).where(Resolution.id == progress_log.resolution_id)
     )
     resolution = resolution_result.scalar_one()
-    
+
     prev_logs = await db.execute(
         select(ProgressLog)
         .where(
@@ -167,24 +170,24 @@ async def generate_progress_verification(
     previous_concepts = []
     for log in prev_logs.scalars():
         previous_concepts.extend(log.concepts_claimed)
-    
+
     quiz_data = await generate_verification_quiz(
         progress_content=progress_log.content,
         source_reference=progress_log.source_reference,
         goal_context=resolution.goal_statement,
         previous_concepts=previous_concepts[:10],
     )
-    
+
     quiz = VerificationQuiz(
         progress_log_id=log_id,
         questions=quiz_data.get("questions", []),
         quiz_type="contextual" if quiz_data.get("search_context") else "teach_back",
     )
-    
+
     db.add(quiz)
     await db.commit()
     await db.refresh(quiz)
-    
+
     return VerificationQuizResponse(
         id=quiz.id,
         progress_log_id=quiz.progress_log_id,
@@ -210,13 +213,13 @@ async def submit_verification_quiz(
         .where(VerificationQuiz.id == quiz_id, Resolution.user_id == user.id)
     )
     quiz = result.scalar_one_or_none()
-    
+
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found")
-    
+
     if quiz.is_completed:
         raise HTTPException(status_code=400, detail="Quiz already submitted")
-    
+
     progress_result = await db.execute(
         select(ProgressLog)
         .options(selectinload(ProgressLog.resolution))
@@ -224,29 +227,29 @@ async def submit_verification_quiz(
     )
     progress_log = progress_result.scalar_one()
     resolution = progress_log.resolution
-    
+
     grading_result = await grade_verification_quiz(
         questions=quiz.questions,
         answers=[a.model_dump() for a in data.answers],
         context=f"{resolution.goal_statement} - {progress_log.content[:200]}",
     )
-    
+
     quiz.responses = [a.model_dump() for a in data.answers]
     quiz.score = grading_result.get("overall_score", 0)
     quiz.passed = grading_result.get("passed", False)
     quiz.is_completed = True
     quiz.completed_at = datetime.utcnow()
-    
+
     progress_log.verified = quiz.passed
     progress_log.verification_score = quiz.score
     progress_log.concepts_claimed = grading_result.get("concepts_to_reinforce", [])
-    
+
     streak_updated = False
     streak_result = await db.execute(
         select(Streak).where(Streak.resolution_id == resolution.id)
     )
     streak = streak_result.scalar_one_or_none()
-    
+
     if streak and quiz.passed:
         streak.total_verified_days += 1
         streak.last_verified_date = date.today()
@@ -254,12 +257,15 @@ async def submit_verification_quiz(
     elif streak and not quiz.passed:
         milestone_result = await db.execute(
             select(Milestone)
-            .where(Milestone.resolution_id == resolution.id, Milestone.status == "in_progress")
+            .where(
+                Milestone.resolution_id == resolution.id,
+                Milestone.status == "in_progress",
+            )
             .order_by(Milestone.order)
             .limit(1)
         )
         current_milestone = milestone_result.scalar_one_or_none()
-        
+
         if current_milestone:
             await analyze_failure_and_suggest_recovery(
                 quiz_results=grading_result,
@@ -270,11 +276,13 @@ async def submit_verification_quiz(
                 },
                 goal_context=resolution.goal_statement,
             )
-    
+
     await db.commit()
-    
-    correct_count = sum(1 for e in grading_result.get("evaluations", []) if e.get("is_correct"))
-    
+
+    correct_count = sum(
+        1 for e in grading_result.get("evaluations", []) if e.get("is_correct")
+    )
+
     return QuizResultResponse(
         quiz_id=quiz.id,
         score=quiz.score * 100,
@@ -294,12 +302,13 @@ async def get_progress_history(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(Resolution)
-        .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
+        select(Resolution).where(
+            Resolution.id == resolution_id, Resolution.user_id == user.id
+        )
     )
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Resolution not found")
-    
+
     logs = await db.execute(
         select(ProgressLog)
         .where(ProgressLog.resolution_id == resolution_id)
@@ -324,10 +333,10 @@ async def get_progress_overview(
         .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
     )
     resolution = result.scalar_one_or_none()
-    
+
     if not resolution:
         raise HTTPException(status_code=404, detail="Resolution not found")
-    
+
     week_start = date.today() - timedelta(days=date.today().weekday())
     logs_this_week = await db.execute(
         select(func.count())
@@ -337,10 +346,12 @@ async def get_progress_overview(
             ProgressLog.date >= week_start,
         )
     )
-    
-    milestones_completed = sum(1 for m in resolution.milestones if m.status == "completed")
+
+    milestones_completed = sum(
+        1 for m in resolution.milestones if m.status == "completed"
+    )
     streak = resolution.streak
-    
+
     return ProgressOverview(
         resolution_id=resolution.id,
         goal_statement=resolution.goal_statement,
@@ -367,10 +378,10 @@ async def get_streak(
         .where(Streak.resolution_id == resolution_id, Resolution.user_id == user.id)
     )
     streak = result.scalar_one_or_none()
-    
+
     if not streak:
         raise HTTPException(status_code=404, detail="Streak not found")
-    
+
     return StreakResponse(
         resolution_id=streak.resolution_id,
         current_streak=streak.current_streak,

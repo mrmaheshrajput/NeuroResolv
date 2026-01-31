@@ -54,14 +54,18 @@ async def generate_roadmap(
             if source.get("type") == "book":
                 source_items.append(f"Book: {source.get('title', 'Unknown')}")
             elif source.get("type") == "url":
-                source_items.append(f"Online Resource: {source.get('value', 'Unknown')}")
+                source_items.append(
+                    f"Online Resource: {source.get('value', 'Unknown')}"
+                )
             elif source.get("type") == "youtube":
                 source_items.append(f"YouTube: {source.get('value', 'Unknown')}")
             elif source.get("type") == "course":
                 source_items.append(f"Course: {source.get('value', 'Unknown')}")
         sources_text = "\n".join(source_items)
     else:
-        sources_text = "No specific sources provided - user will find resources as they go"
+        sources_text = (
+            "No specific sources provided - user will find resources as they go"
+        )
 
     cadence_map = {
         "daily": "Learning daily (7 days/week)",
@@ -84,7 +88,7 @@ LEARNING CADENCE: {cadence_description}
 LEARNING SOURCES:
 {sources_text}
 
-Generate a milestone-based roadmap that will guide this learner to achieve their goal. 
+Generate a milestone-based roadmap that will guide this learner to achieve their goal.
 Each milestone should have clear, demonstrable verification criteria."""
 
     try:
@@ -97,17 +101,19 @@ Each milestone should have clear, demonstrable verification criteria."""
                 response_mime_type="application/json",
             ),
         )
-        
+
         result = json.loads(response.text)
         return result
-        
+
     except Exception as e:
         return _generate_fallback_roadmap(goal_statement, category, cadence)
 
 
 def _generate_fallback_roadmap(goal: str, category: str, cadence: str) -> dict:
-    weeks_per_milestone = 2 if cadence == "daily" else 3 if cadence in ["3x_week", "weekdays"] else 4
-    
+    weeks_per_milestone = (
+        2 if cadence == "daily" else 3 if cadence in ["3x_week", "weekdays"] else 4
+    )
+
     return {
         "milestones": [
             {

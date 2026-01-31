@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { api } from '../utils/api'
+import WeeklyGoalBanner from './WeeklyGoalBanner'
 import {
     Brain, LogOut, Plus, Target, Flame, BookOpen,
     ChevronRight, Loader2, X, Dumbbell, Briefcase,
-    Palette, GraduationCap, TrendingUp
+    Palette, GraduationCap, TrendingUp, Sparkles, Edit2
 } from 'lucide-react'
 import './DashboardPage.css'
 import './CreateModal.css'
@@ -116,15 +117,18 @@ export default function DashboardPage() {
                             </button>
                         </div>
                     ) : (
-                        <div className="resolutions-grid">
-                            {resolutions.map((resolution) => (
-                                <ResolutionCard
-                                    key={resolution.id}
-                                    resolution={resolution}
-                                    onClick={() => navigate(`/resolution/${resolution.id}`)}
-                                />
-                            ))}
-                        </div>
+                        <>
+                            <WeeklyGoalBanner resolutions={resolutions} />
+                            <div className="resolutions-grid">
+                                {resolutions.map((resolution) => (
+                                    <ResolutionCard
+                                        key={resolution.id}
+                                        resolution={resolution}
+                                        onClick={() => navigate(`/resolution/${resolution.id}`)}
+                                    />
+                                ))}
+                            </div>
+                        </>
                     )}
                 </div>
             </main>
@@ -203,6 +207,7 @@ function CreateResolutionModal({ onClose, onCreated }) {
     const [negotiating, setNegotiating] = useState(false)
     const [negotiationResult, setNegotiationResult] = useState(null)
     const [error, setError] = useState('')
+    const [roadmapMode, setRoadmapMode] = useState('ai_generated') // ai_generated, manual, streak_only
 
     async function handleNext() {
         if (step === 1) {
@@ -221,16 +226,16 @@ function CreateResolutionModal({ onClose, onCreated }) {
                     cadence,
                 })
                 setNegotiationResult(result)
-                if (!result.is_feasible) {
-                    // Stay on step 2 but show negotiation
-                } else {
-                    handleSubmit()
+                if (result.is_feasible) {
+                    setStep(3)
                 }
             } catch (err) {
                 setError(err.message)
             } finally {
                 setNegotiating(false)
             }
+        } else if (step === 3) {
+            handleSubmit()
         }
     }
 
@@ -238,21 +243,7 @@ function CreateResolutionModal({ onClose, onCreated }) {
         if (negotiationResult?.suggestion) {
             setCadence(negotiationResult.suggestion.cadence)
             setNegotiationResult(null)
-            // Re-negotiate or just submit? Let's just submit with the new cadence to be fast
-            setLoading(true)
-            try {
-                const resolution = await api.createResolution({
-                    goal_statement: goalStatement,
-                    category,
-                    skill_level: skillLevel || null,
-                    cadence: negotiationResult.suggestion.cadence,
-                })
-                onCreated(resolution)
-            } catch (err) {
-                setError(err.message)
-            } finally {
-                setLoading(false)
-            }
+            setStep(3)
         }
     }
 
@@ -271,6 +262,7 @@ function CreateResolutionModal({ onClose, onCreated }) {
                 category,
                 skill_level: skillLevel || null,
                 cadence,
+                roadmap_mode: roadmapMode,
             })
             onCreated(resolution)
         } catch (err) {
@@ -295,6 +287,7 @@ function CreateResolutionModal({ onClose, onCreated }) {
                 <div className="modal-steps">
                     <div className={`step ${step >= 1 ? 'active' : ''}`}>1. Goal</div>
                     <div className={`step ${step >= 2 ? 'active' : ''}`}>2. Details</div>
+                    <div className={`step ${step >= 3 ? 'active' : ''}`}>3. Roadmap</div>
                 </div>
 
                 <div className="modal-form">
@@ -404,7 +397,7 @@ function CreateResolutionModal({ onClose, onCreated }) {
                                                 <button
                                                     type="button"
                                                     className="btn btn-ghost btn-sm"
-                                                    onClick={handleSubmit}
+                                                    onClick={() => setStep(3)}
                                                 >
                                                     Keep My Plan
                                                 </button>
@@ -416,6 +409,53 @@ function CreateResolutionModal({ onClose, onCreated }) {
                         </div>
                     )}
 
+                    {step === 3 && (
+                        <div className="step-content">
+                            <div className="input-group">
+                                <label className="input-label">How should we build your roadmap?</label>
+                                <div className="roadmap-mode-options">
+                                    {[
+                                        {
+                                            value: 'ai_generated',
+                                            label: 'AI Personalized',
+                                            desc: 'Best for new skills. AI builds and adapts your plan.',
+                                            icon: Sparkles
+                                        },
+                                        {
+                                            value: 'manual',
+                                            label: 'I\'ll build it myself',
+                                            desc: 'Specify your own milestones and target dates.',
+                                            icon: Edit2
+                                        },
+                                        {
+                                            value: 'streak_only',
+                                            label: 'Just track my days',
+                                            desc: 'No roadmap. Just a daily habit tracker.',
+                                            icon: Flame
+                                        },
+                                    ].map((option) => {
+                                        const Icon = option.icon
+                                        return (
+                                            <button
+                                                key={option.value}
+                                                type="button"
+                                                className={`roadmap-mode-btn ${roadmapMode === option.value ? 'selected' : ''}`}
+                                                onClick={() => setRoadmapMode(option.value)}
+                                            >
+                                                <div className="mode-icon-wrap">
+                                                    <Icon size={24} />
+                                                </div>
+                                                <div className="mode-text">
+                                                    <span className="mode-label">{option.label}</span>
+                                                    <span className="mode-desc">{option.desc}</span>
+                                                </div>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="modal-actions">
@@ -445,7 +485,7 @@ function CreateResolutionModal({ onClose, onCreated }) {
                             </>
                         ) : (
                             <>
-                                {step === 2 ? 'Finish' : 'Continue'}
+                                {step === 3 ? 'Finish' : 'Continue'}
                                 <ChevronRight size={18} />
                             </>
                         )}

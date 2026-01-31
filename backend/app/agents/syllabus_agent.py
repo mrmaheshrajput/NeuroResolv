@@ -1,14 +1,14 @@
 import json
 import os
 from typing import Optional
+
+from app.config import get_settings
+from app.observability import track_llm_call
+from app.services import query_collection
 from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
-
-from app.config import get_settings
-from app.services import query_collection
-from app.observability import track_llm_call
 
 settings = get_settings()
 
@@ -20,7 +20,7 @@ def create_syllabus_agent() -> Agent:
         name="syllabus_generator",
         model="gemini-flash-lite-latest",
         description="Generates personalized learning syllabi based on user goals and uploaded content",
-        instruction="""You are an expert curriculum designer and learning specialist. Your task is to create 
+        instruction="""You are an expert curriculum designer and learning specialist. Your task is to create
 a personalized, structured learning syllabus based on the user's learning goal and available content.
 
 When generating a syllabus:
@@ -55,24 +55,26 @@ Make the syllabus engaging, progressive, and achievable within the daily time li
 
 def retrieve_content_tool(query: str, resolution_id: int) -> dict:
     """Retrieves relevant content from the user's uploaded learning materials.
-    
+
     Args:
         query: Search query to find relevant content
         resolution_id: The resolution ID to search within
-        
+
     Returns:
         dict: Retrieved content chunks with metadata
     """
     import asyncio
-    
+
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-    
+
     try:
-        results = loop.run_until_complete(query_collection(resolution_id, query, n_results=5))
+        results = loop.run_until_complete(
+            query_collection(resolution_id, query, n_results=5)
+        )
         return {
             "status": "success",
             "documents": results.get("documents", [[]]),
@@ -92,18 +94,18 @@ async def generate_syllabus(
 ) -> dict:
     agent = create_syllabus_agent()
     session_service = InMemorySessionService()
-    
+
     runner = Runner(
         agent=agent,
         app_name="neuroresolv",
         session_service=session_service,
     )
-    
+
     session = await session_service.create_session(
         app_name="neuroresolv",
         user_id=f"resolution_{resolution_id}",
     )
-    
+
     prompt = f"""Create a {duration_days}-day learning syllabus for the following goal:
 
 Goal: {goal_statement}
@@ -121,17 +123,14 @@ Return the syllabus as a valid JSON object."""
     async for event in runner.run_async(
         user_id=f"resolution_{resolution_id}",
         session_id=session.id,
-        new_message=types.Content(
-            role="user",
-            parts=[types.Part(text=prompt)]
-        ),
+        new_message=types.Content(role="user", parts=[types.Part(text=prompt)]),
     ):
         if hasattr(event, "content") and event.content:
             if hasattr(event.content, "parts"):
                 for part in event.content.parts:
                     if hasattr(part, "text"):
                         result = part.text
-    
+
     if result:
         try:
             json_start = result.find("{")
@@ -140,26 +139,35 @@ Return the syllabus as a valid JSON object."""
                 return json.loads(result[json_start:json_end])
         except json.JSONDecodeError:
             pass
-    
+
     return _generate_fallback_syllabus(goal_statement, duration_days, daily_minutes)
 
 
 def _generate_fallback_syllabus(goal: str, days: int, minutes: int) -> dict:
     daily_items = []
     for i in range(1, days + 1):
-        phase = "Foundation" if i <= days // 3 else ("Building" if i <= 2 * days // 3 else "Mastery")
-        daily_items.append({
-            "day": i,
-            "title": f"Day {i}: {phase} Phase",
-            "description": f"Continue learning journey - {phase.lower()} concepts",
-            "concepts": [f"concept_{i}_a", f"concept_{i}_b"],
-            "estimated_minutes": minutes,
-        })
-    
+        phase = (
+            "Foundation"
+            if i <= days // 3
+            else ("Building" if i <= 2 * days // 3 else "Mastery")
+        )
+        daily_items.append(
+            {
+                "day": i,
+                "title": f"Day {i}: {phase} Phase",
+                "description": f"Continue learning journey - {phase.lower()} concepts",
+                "concepts": [f"concept_{i}_a", f"concept_{i}_b"],
+                "estimated_minutes": minutes,
+            }
+        )
+
     return {
         "title": f"Learning Journey: {goal[:50]}...",
         "total_days": days,
         "days": daily_items,
-        "learning_objectives": ["Understand core concepts", "Apply knowledge practically"],
+        "learning_objectives": [
+            "Understand core concepts",
+            "Apply knowledge practically",
+        ],
         "prerequisites": [],
     }

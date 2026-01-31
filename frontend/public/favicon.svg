@@ -7,7 +7,7 @@
     </linearGradient>
   </defs>
   <circle cx="50" cy="50" r="45" fill="url(#brainGradient)" opacity="0.2"/>
-  <path d="M50 20 C30 20 20 35 20 50 C20 65 30 80 50 80 C70 80 80 65 80 50 C80 35 70 20 50 20" 
+  <path d="M50 20 C30 20 20 35 20 50 C20 65 30 80 50 80 C70 80 80 65 80 50 C80 35 70 20 50 20"
         fill="none" stroke="url(#brainGradient)" stroke-width="3"/>
   <path d="M35 40 Q50 30 65 40" fill="none" stroke="url(#brainGradient)" stroke-width="2"/>
   <path d="M35 50 Q50 45 65 50" fill="none" stroke="url(#brainGradient)" stroke-width="2"/>

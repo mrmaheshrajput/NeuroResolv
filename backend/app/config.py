@@ -1,5 +1,6 @@
-from pydantic_settings import BaseSettings
 from functools import lru_cache
+
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -37,7 +38,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
         # This might be not a good idea to include this
-        "https://neuro-resolv.vercel.app",  
+        "https://neuro-resolv.vercel.app",
     ]
 
     class Config:

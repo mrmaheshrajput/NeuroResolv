@@ -1,11 +1,15 @@
-from app.db.database import Base, get_db, create_tables, async_session_maker
+from app.db.database import Base, async_session_maker, create_tables, get_db
 from app.db.models import (
-    User, 
-    Resolution, 
-    Milestone, 
-    ProgressLog, 
-    VerificationQuiz, 
+    AIFeedback,
+    Milestone,
+    NorthStarGoal,
+    ProgressLog,
+    Resolution,
     Streak,
+    User,
+    UserWeeklyFocus,
+    VerificationQuiz,
+    WeeklyGoal,
     WeeklyReflection,
 )
 
@@ -21,4 +25,8 @@ __all__ = [
     "VerificationQuiz",
     "Streak",
     "WeeklyReflection",
+    "WeeklyGoal",
+    "NorthStarGoal",
+    "AIFeedback",
+    "UserWeeklyFocus",
 ]

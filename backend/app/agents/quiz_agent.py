@@ -1,14 +1,14 @@
 import json
 import os
 from typing import Optional
+
+from app.config import get_settings
+from app.observability import track_llm_call
+from app.services import query_collection
 from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
-
-from app.config import get_settings
-from app.services import query_collection
-from app.observability import track_llm_call
 
 settings = get_settings()
 
@@ -20,7 +20,7 @@ def create_quiz_agent() -> Agent:
         name="quiz_generator",
         model="gemini-flash-lite-latest",
         description="Generates active recall quizzes to test comprehension of learning content",
-        instruction="""You are an expert educational assessor specializing in active recall techniques. 
+        instruction="""You are an expert educational assessor specializing in active recall techniques.
 Your task is to generate effective quiz questions that test genuine understanding, not just memorization.
 
 Guidelines for quiz generation:
@@ -76,26 +76,30 @@ async def generate_quiz(
 ) -> dict:
     agent = create_quiz_agent()
     session_service = InMemorySessionService()
-    
+
     runner = Runner(
         agent=agent,
         app_name="neuroresolv",
         session_service=session_service,
     )
-    
+
     session = await session_service.create_session(
         app_name="neuroresolv",
         user_id="quiz_generator",
     )
-    
+
     difficulty_note = ""
     if user_performance_history:
         avg_score = user_performance_history.get("average_score", 70)
         if avg_score > 85:
-            difficulty_note = "User has been performing well. Include more challenging questions."
+            difficulty_note = (
+                "User has been performing well. Include more challenging questions."
+            )
         elif avg_score < 60:
-            difficulty_note = "User has been struggling. Focus on foundational questions."
-    
+            difficulty_note = (
+                "User has been struggling. Focus on foundational questions."
+            )
+
     prompt = f"""Generate a quiz for the following learning session:
 
 Session Title: {session_title}
@@ -114,17 +118,14 @@ Return the quiz as a valid JSON object with the questions array."""
     async for event in runner.run_async(
         user_id="quiz_generator",
         session_id=session.id,
-        new_message=types.Content(
-            role="user",
-            parts=[types.Part(text=prompt)]
-        ),
+        new_message=types.Content(role="user", parts=[types.Part(text=prompt)]),
     ):
         if hasattr(event, "content") and event.content:
             if hasattr(event.content, "parts"):
                 for part in event.content.parts:
                     if hasattr(part, "text"):
                         result = part.text
-    
+
     if result:
         try:
             json_start = result.find("{")
@@ -133,39 +134,43 @@ Return the quiz as a valid JSON object with the questions array."""
                 return json.loads(result[json_start:json_end])
         except json.JSONDecodeError:
             pass
-    
+
     return _generate_fallback_quiz(concepts)
 
 
 def _generate_fallback_quiz(concepts: list[str]) -> dict:
     questions = []
-    
+
     for i, concept in enumerate(concepts[:5]):
-        questions.append({
-            "type": "multiple_choice",
-            "question": f"Which of the following best describes {concept}?",
-            "options": [
-                f"A common application of {concept}",
-                f"The core principle of {concept}",
-                f"An unrelated concept",
-                f"A prerequisite for {concept}",
-            ],
-            "correct_answer": f"The core principle of {concept}",
-            "concept": concept,
-            "difficulty": "medium",
-            "explanation": f"This tests understanding of {concept}.",
-        })
-    
+        questions.append(
+            {
+                "type": "multiple_choice",
+                "question": f"Which of the following best describes {concept}?",
+                "options": [
+                    f"A common application of {concept}",
+                    f"The core principle of {concept}",
+                    f"An unrelated concept",
+                    f"A prerequisite for {concept}",
+                ],
+                "correct_answer": f"The core principle of {concept}",
+                "concept": concept,
+                "difficulty": "medium",
+                "explanation": f"This tests understanding of {concept}.",
+            }
+        )
+
     if len(concepts) > 0:
-        questions.append({
-            "type": "true_false",
-            "question": f"{concepts[0]} is a fundamental concept in this learning path.",
-            "correct_answer": "true",
-            "concept": concepts[0],
-            "difficulty": "easy",
-            "explanation": f"{concepts[0]} is indeed a core concept covered today.",
-        })
-    
+        questions.append(
+            {
+                "type": "true_false",
+                "question": f"{concepts[0]} is a fundamental concept in this learning path.",
+                "correct_answer": "true",
+                "concept": concepts[0],
+                "difficulty": "easy",
+                "explanation": f"{concepts[0]} is indeed a core concept covered today.",
+            }
+        )
+
     return {"questions": questions}
 
 
@@ -193,19 +198,19 @@ Output Format (JSON):
 }""",
         tools=[],
     )
-    
+
     session_service = InMemorySessionService()
     runner = Runner(
         agent=agent,
         app_name="neuroresolv",
         session_service=session_service,
     )
-    
+
     session = await session_service.create_session(
         app_name="neuroresolv",
         user_id="grader",
     )
-    
+
     prompt = f"""Grade this answer:
 
 Question: {question}
@@ -219,17 +224,14 @@ Evaluate and return a JSON grade."""
     async for event in runner.run_async(
         user_id="grader",
         session_id=session.id,
-        new_message=types.Content(
-            role="user",
-            parts=[types.Part(text=prompt)]
-        ),
+        new_message=types.Content(role="user", parts=[types.Part(text=prompt)]),
     ):
         if hasattr(event, "content") and event.content:
             if hasattr(event.content, "parts"):
                 for part in event.content.parts:
                     if hasattr(part, "text"):
                         result = part.text
-    
+
     if result:
         try:
             json_start = result.find("{")
@@ -238,7 +240,7 @@ Evaluate and return a JSON grade."""
                 return json.loads(result[json_start:json_end])
         except json.JSONDecodeError:
             pass
-    
+
     return {
         "is_correct": False,
         "score": 0.5,

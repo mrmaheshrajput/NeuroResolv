@@ -219,19 +219,22 @@
     padding: var(--space-10);
 }
 
-.form-header {
+.form-header-login-register-page {
     text-align: center;
     margin-bottom: var(--space-8);
 }
 
-.form-header h2 {
+.form-header-login-register-page h2 {
     font-size: 1.75rem;
     font-weight: 700;
     margin-bottom: var(--space-2);
+    text-align: center;
 }
 
-.form-header p {
+.form-header-login-register-page p {
     color: var(--gray-400);
+    text-align: center;
+    margin-bottom: var(--space-4);
 }
 
 .error-message {

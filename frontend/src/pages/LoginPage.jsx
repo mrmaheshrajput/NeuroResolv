@@ -99,10 +99,11 @@ export default function LoginPage() {
                             <span>Built with</span>
                             <div className="tech-badges">
                                 <span className="tech-badge">Google ADK</span>
-                                <span className="tech-badge">Gemini 2.0</span>
+                                <span className="tech-badge">Gemini 3 Pro</span>
                                 <span className="tech-badge">Opik</span>
                                 <span className="tech-badge">FastAPI</span>
                                 <span className="tech-badge">React</span>
+                                <span className="tech-badge">Vercel</span>
                             </div>
                         </div>
                     </div>
@@ -110,7 +111,7 @@ export default function LoginPage() {
 
                 <div className="login-form-section">
                     <div className="login-form-container animate-fadeIn">
-                        <div className="form-header">
+                        <div className="form-header-login-register-page">
                             <h2>Welcome Back</h2>
                             <p>Sign in to continue your learning journey</p>
                         </div>

@@ -54,7 +54,7 @@ export default function RegisterPage() {
                             Back to login
                         </Link>
 
-                        <div className="form-header" style={{ marginTop: 'var(--space-4)' }}>
+                        <div className="form-header-login-register-page" style={{ marginTop: 'var(--space-4)' }}>
                             <div className="logo" style={{ justifyContent: 'center', marginBottom: 'var(--space-4)' }}>
                                 <Brain className="logo-icon" />
                                 <span className="logo-text">NeuroResolv</span>

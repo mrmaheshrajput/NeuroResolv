@@ -15,12 +15,9 @@ from app.schemas import (
     QuizResultResponse,
     QuizSubmission,
     StreakResponse,
-    TranscriptionResponse,
     VerificationQuizResponse,
-    VoiceNoteUpload,
 )
-from app.services import transcribe_voice_note
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, Form, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -28,31 +25,22 @@ from sqlalchemy.orm import selectinload
 router = APIRouter(prefix="/progress", tags=["progress"])
 
 
-@router.post("/transcribe", response_model=TranscriptionResponse)
-async def transcribe_audio(
-    data: VoiceNoteUpload,
-    user: dict = Depends(get_current_user),
-):
-    try:
-        result = await transcribe_voice_note(data.audio_base64)
-        return TranscriptionResponse(
-            text=result["text"],
-            duration_seconds=data.duration_seconds,
-        )
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
 @router.post("/log/{resolution_id}", response_model=ProgressLogResponse)
 async def log_progress(
     resolution_id: int,
-    data: ProgressLogCreate,
+    content: str | None = Form(None),
+    file: UploadFile | None = File(None),
+    input_type: str = Form("text"),
+    duration_minutes: int | None = Form(None),
+    source_reference: str | None = Form(None),
     user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
         select(Resolution)
-        .options(selectinload(Resolution.streak))
+        .options(
+            selectinload(Resolution.streak), selectinload(Resolution.progress_logs)
+        )
         .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
     )
     resolution = result.scalar_one_or_none()
@@ -70,13 +58,52 @@ async def log_progress(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Already logged progress for today")
 
+    # Handle Input
+    media_content = None
+    mime_type = None
+
+    if input_type != "text":
+        if not file:
+            raise HTTPException(
+                status_code=400, detail="File required for non-text input"
+            )
+
+        content_bytes = await file.read()
+        media_content = content_bytes
+        mime_type = file.content_type
+        # WE DO NOT SAVE THE FILE TO DISK
+
+    # Context for AI
+    recent_logs = sorted(resolution.progress_logs, key=lambda x: x.date, reverse=True)[
+        :5
+    ]
+    history_summary = "\\n".join([f"- {l.date}: {l.content}" for l in recent_logs])
+
+    # analyze
+    from app.agents.checkin_agent import analyze_checkin
+
+    ai_result = await analyze_checkin(
+        input_type=input_type,
+        content=media_content if media_content else content,
+        mime_type=mime_type,
+        goal_context=resolution.goal_statement,
+        recent_history=history_summary,
+    )
+
+    final_content = ai_result.get(
+        "description", content if content else "Check-in logged via media."
+    )
+    reflection = ai_result.get("reflection", "Great work!")
+
     progress_log = ProgressLog(
         resolution_id=resolution_id,
         date=today,
-        content=data.content,
-        input_type=data.input_type,
-        source_reference=data.source_reference,
-        duration_minutes=data.duration_minutes,
+        content=final_content,
+        input_type=input_type,
+        source_reference=source_reference,
+        duration_minutes=duration_minutes,
+        ai_reflection=reflection,
+        verified=True,  # Auto-verify based on "trust" per requirements
     )
 
     db.add(progress_log)
@@ -90,11 +117,17 @@ async def log_progress(
             streak.current_streak = 1
 
         streak.last_log_date = today
+        streak.total_verified_days += 1  # Auto-increment verified days
+        streak.last_verified_date = today
+
         if streak.current_streak > streak.longest_streak:
             streak.longest_streak = streak.current_streak
 
     await db.commit()
     await db.refresh(progress_log)
+
+    # We populate quiz_completed as False since we aren't doing quizzes anymore, or true?
+    # Frontend seems to handle it.
 
     return progress_log
 

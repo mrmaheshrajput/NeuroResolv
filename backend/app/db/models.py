@@ -114,6 +114,7 @@ class ProgressLog(Base):
 
     source_reference: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     duration_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    ai_reflection: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     concepts_claimed: Mapped[list] = mapped_column(JSON, default=list)
 
     verified: Mapped[bool] = mapped_column(Boolean, default=False)

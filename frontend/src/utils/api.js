@@ -129,6 +129,27 @@ class ApiClient {
         })
     }
 
+    async logCheckin(resolutionId, formData) {
+        const url = `${this.baseUrl}/progress/log/${resolutionId}`
+        const token = this.getToken()
+        const headers = {}
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`
+        }
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers,
+            body: formData,
+        })
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ detail: 'An error occurred' }))
+            throw new Error(error.detail || 'Request failed')
+        }
+        return response.json()
+    }
+
     async getTodayProgress(resolutionId) {
         return this.request(`/progress/today/${resolutionId}`)
     }

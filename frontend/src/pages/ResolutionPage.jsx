@@ -356,14 +356,6 @@ export default function ResolutionPage() {
                                         <div className="logged-content">
                                             <h3>Today's Progress Logged</h3>
                                             <p>{todayProgress.content.slice(0, 100)}...</p>
-                                            {!todayProgress.quiz_completed && (
-                                                <Link
-                                                    to={`/checkin/${id}?verify=${todayProgress.id}`}
-                                                    className="btn btn-primary btn-sm"
-                                                >
-                                                    Take Verification Quiz
-                                                </Link>
-                                            )}
                                         </div>
                                     </div>
                                 ) : (

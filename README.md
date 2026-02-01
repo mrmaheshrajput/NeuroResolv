@@ -129,7 +129,6 @@ Create a `backend/.env` file with your credentials:
 ```env
 # Required for AI features
 GOOGLE_API_KEY=your-gemini-api-key
-OPENAI_API_KEY=your-openai-api-key
 
 # Required for LLM observability
 OPIK_API_KEY=your-opik-api-key

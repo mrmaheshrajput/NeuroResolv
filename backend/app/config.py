@@ -12,7 +12,6 @@ class Settings(BaseSettings):
 
     # API Keys
     google_api_key: str = "sample-gemini-api-key"
-    openai_api_key: str = "sample-openai-api-key"
 
     # Opik Cloud Settings
     opik_api_key: str = "sample-opik-api-key"

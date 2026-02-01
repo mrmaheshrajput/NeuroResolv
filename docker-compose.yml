@@ -11,7 +11,6 @@ services:
       - DB_SECRET_NAME=${DB_SECRET_NAME:-rdb_creds}
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-not-for-production}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-sample-gemini-api-key}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-sample-openai-api-key}
       - OPIK_API_KEY=${OPIK_API_KEY:-sample-opik-api-key}
       - OPIK_WORKSPACE=${OPIK_WORKSPACE:-default}
       - OPIK_PROJECT_NAME=${OPIK_PROJECT_NAME:-neuroresolv}

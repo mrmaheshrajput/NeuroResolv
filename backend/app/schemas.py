@@ -151,6 +151,7 @@ class ProgressLogCreate(BaseModel):
     input_type: str = "text"
     source_reference: Optional[str] = None
     duration_minutes: Optional[int] = None
+    ai_reflection: Optional[str] = None
 
 
 class ProgressLogResponse(BaseModel):
@@ -161,6 +162,7 @@ class ProgressLogResponse(BaseModel):
     input_type: str
     source_reference: Optional[str]
     duration_minutes: Optional[int]
+    ai_reflection: Optional[str] = None
     concepts_claimed: list
     verified: bool
     verification_score: Optional[float]

@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "neuroresolv-backend"
 version = "0.1.0"
-description = "Adaptive AI Tutor & Accountability Partner for New Year Resolutions"
+description = "Adaptive AI Accountability Partner for New Year Resolutions"
 authors = ["Mahesh"]
 readme = "README.md"
 
@@ -29,6 +29,7 @@ boto3 = "^1.42.34"
 psycopg2-binary = "^2.9.9"
 ipykernel = "^7.1.0"
 pre-commit = "^4.5.1"
+json-repair = "^0.55.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

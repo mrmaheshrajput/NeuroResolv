@@ -38,7 +38,7 @@ def create_database_if_not_exists() -> bool:
     #     f"@{creds['host']}:{creds['port']}/postgres"
     # )
     admin_url = get_sync_database_url()
-
+    admin_url = admin_url.replace("neuroresolv", "postgres")
     engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
     try:
         with engine.connect() as conn:

@@ -4,7 +4,7 @@ from app.api import auth_router, progress_router, resolutions_router
 from app.config import get_settings
 from app.db import create_tables
 from app.observability import init_opik
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -18,12 +18,29 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(
-    title="NeuroResolv API",
-    description="Adaptive AI Tutor & Accountability Partner for New Year Resolutions",
-    version="1.1.0",
-    lifespan=lifespan,
-)
+app_configs = {
+    "title": "NeuroResolv API",
+    "description": "Adaptive AI Tutor & Accountability Partner for New Year Resolutions",
+    "version": "1.1.0",
+    "lifespan": lifespan,
+}
+
+if settings.environment != "development":
+    app_configs.update(
+        {
+            "docs_url": None,
+            "redoc_url": None,
+            "openapi_url": None,
+        }
+    )
+
+app = FastAPI(**app_configs)
+
+
+async def verify_api_key(request: Request):
+    api_key = request.headers.get("X-API-Key")
+    if not api_key or api_key != settings.api_key:
+        raise HTTPException(status_code=403, detail="Invalid or missing API Key")
 
 
 app.add_middleware(
@@ -36,13 +53,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router, dependencies=[Depends(verify_api_key)])
+app.include_router(resolutions_router, dependencies=[Depends(verify_api_key)])
+app.include_router(progress_router, dependencies=[Depends(verify_api_key)])
 
-app.include_router(auth_router)
-app.include_router(resolutions_router)
-app.include_router(progress_router)
 
-
-@app.get("/")
+@app.get("/", dependencies=[Depends(verify_api_key)])
 async def root():
     return {
         "name": "NeuroResolv API",
@@ -57,7 +73,7 @@ async def root():
     }
 
 
-@app.get("/health")
+@app.get("/health", dependencies=[Depends(verify_api_key)])
 async def health_check():
     return {"status": "healthy"}
 

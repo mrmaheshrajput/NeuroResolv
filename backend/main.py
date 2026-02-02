@@ -58,7 +58,7 @@ app.include_router(resolutions_router, dependencies=[Depends(verify_api_key)])
 app.include_router(progress_router, dependencies=[Depends(verify_api_key)])
 
 
-@app.get("/", dependencies=[Depends(verify_api_key)])
+@app.get("/")
 async def root():
     return {
         "name": "NeuroResolv API",

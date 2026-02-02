@@ -16,6 +16,7 @@ services:
       - OPIK_PROJECT_NAME=${OPIK_PROJECT_NAME:-neuroresolv}
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - DEBUG=${DEBUG:-true}
+      - API_KEY=${API_KEY:-dev-api-key-12345}
       - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000","http://localhost:5173"]}
     volumes:
       - backend_data:/app/chroma_data
@@ -35,6 +36,7 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+        - VITE_API_KEY=${VITE_API_KEY:-dev-api-key-12345}
     container_name: neuroresolv-frontend
     ports:
       - "3000:3000"

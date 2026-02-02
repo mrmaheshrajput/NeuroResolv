@@ -1,4 +1,5 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_KEY = import.meta.env.VITE_API_KEY
 
 class ApiClient {
     constructor() {
@@ -23,6 +24,7 @@ class ApiClient {
 
         const headers = {
             'Content-Type': 'application/json',
+            'X-API-Key': API_KEY,
             ...options.headers,
         }
 
@@ -132,7 +134,9 @@ class ApiClient {
     async logCheckin(resolutionId, formData) {
         const url = `${this.baseUrl}/progress/log/${resolutionId}`
         const token = this.getToken()
-        const headers = {}
+        const headers = {
+            'X-API-Key': API_KEY
+        }
         if (token) {
             headers['Authorization'] = `Bearer ${token}`
         }

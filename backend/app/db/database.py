@@ -103,8 +103,8 @@ def get_sync_database_url() -> str:
 engine = create_async_engine(
     get_database_url(),
     echo=get_settings().debug,
-    pool_size=5,
-    max_overflow=10,
+    pool_size=4,
+    max_overflow=6,
     pool_pre_ping=True,
 )
 

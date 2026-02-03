@@ -3,9 +3,10 @@ from app.config import get_settings
 from app.observability import track_llm_call
 from google import genai
 from google.genai import types
+from opik.integrations.genai import track_genai
 
 settings = get_settings()
-client = genai.Client(api_key=settings.google_api_key)
+client = track_genai(genai.Client(api_key=settings.google_api_key))
 
 CHECKIN_SYSTEM_PROMPT = """You are an encouraging accountability partner.
 Your role is to analyze a user's check-in (text, image, video, or audio) for their habit/goal.
@@ -49,9 +50,11 @@ INPUT TYPE: {input_type}
     elif input_type == "text":
         parts.append(f"USER TEXT: {content}")
 
+    MODEL = "gemini-2.5-flash-lite"
+
     try:
         response = await client.aio.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model=MODEL,
             contents=parts,
             config=types.GenerateContentConfig(
                 system_instruction=CHECKIN_SYSTEM_PROMPT,

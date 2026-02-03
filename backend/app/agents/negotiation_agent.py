@@ -4,9 +4,10 @@ from app.config import get_settings
 from app.observability import track_llm_call
 from google import genai
 from google.genai import types
+from opik.integrations.genai import track_genai
 
 settings = get_settings()
-client = genai.Client(api_key=settings.google_api_key)
+client = track_genai(genai.Client(api_key=settings.google_api_key))
 
 
 NEGOTIATION_SYSTEM_PROMPT = """You are a behavioral scientist and learning coach specialized in habit formation and goal setting.
@@ -37,7 +38,7 @@ Return a JSON object with this structure:
 }"""
 
 
-@track_llm_call("resolution_negotiation")
+@track_llm_call("analyze_resolution_feasibility")
 async def analyze_feasibility(
     goal_statement: str,
     category: str,
@@ -66,8 +67,9 @@ Is this realistic? Consider their total load across all resolutions if they have
 If not, what would you suggest instead to ensure they don't burn out and actually achieve the goal?"""
 
     try:
+        MODEL = "gemini-2.5-flash-lite"
         response = await client.aio.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model=MODEL,
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=NEGOTIATION_SYSTEM_PROMPT,

@@ -172,18 +172,6 @@ Address their concerns and create a vision they'll be excited about."""
             ),
         )
 
-        token_counts = get_token_counts(response.usage_metadata)
-
-        opik_context.update_current_span(
-            provider="google_ai",
-            model=MODEL,
-            usage={
-                "prompt_tokens": token_counts["prompt_tokens"],
-                "output_tokens": token_counts["output_tokens"],
-                "total_tokens": token_counts["total_tokens"],
-            },
-        )
-
         result = json.loads(response.text)
         return result
 
@@ -257,18 +245,6 @@ Return JSON with the North Star structure plus an "updated" boolean field."""
                 temperature=0.6,
                 response_mime_type="application/json",
             ),
-        )
-
-        token_counts = get_token_counts(response.usage_metadata)
-
-        opik_context.update_current_span(
-            provider="google_ai",
-            model=MODEL,
-            usage={
-                "prompt_tokens": token_counts["prompt_tokens"],
-                "output_tokens": token_counts["output_tokens"],
-                "total_tokens": token_counts["total_tokens"],
-            },
         )
 
         result = json.loads(response.text)

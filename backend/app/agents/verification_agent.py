@@ -47,6 +47,7 @@ async def generate_verification_quiz(
     source_reference: str | None,
     goal_context: str,
     previous_concepts: list[str] | None = None,
+    metadata: dict = None,
 ) -> dict:
     search_context = None
 
@@ -179,6 +180,7 @@ async def grade_verification_quiz(
     questions: list[dict],
     answers: list[dict],
     context: str,
+    metadata: dict = None,
 ) -> dict:
     qa_pairs = []
     for q in questions:

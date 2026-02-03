@@ -45,6 +45,7 @@ async def generate_roadmap(
     category: str,
     skill_level: str | None,
     cadence: str,
+    metadata: dict = None,
 ) -> dict:
     cadence_map = {
         "daily": "Learning daily (7 days/week)",
@@ -131,6 +132,7 @@ async def refine_milestone(
     milestone_title: str,
     user_edit: dict,
     context: str,
+    metadata: dict = None,
 ) -> dict:
     prompt = f"""The user has edited a milestone in their learning roadmap.
 
@@ -190,6 +192,7 @@ async def generate_living_roadmap_update(
     streak_data: dict,
     resolution_id: int | None = None,
     verification_scores: list[float] | None = None,
+    metadata: dict = None,
 ) -> dict:
     """Generate a living roadmap update based on user's actual progress.
 

@@ -41,6 +41,7 @@ async def analyze_failure_and_suggest_recovery(
     original_content: str,
     current_milestone: dict,
     goal_context: str,
+    metadata: dict = None,
 ) -> dict:
     prompt = f"""A learner failed their verification quiz. Help them recover.
 
@@ -112,6 +113,7 @@ async def generate_weekly_reflection_prompt(
     goal_context: str,
     logs_this_week: list[dict],
     milestone_progress: dict,
+    metadata: dict = None,
 ) -> dict:
     logs_summary = (
         "\n".join(

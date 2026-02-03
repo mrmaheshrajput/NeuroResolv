@@ -33,6 +33,7 @@ async def analyze_checkin(
     mime_type: str | None,
     goal_context: str,
     recent_history: str,
+    metadata: dict = None,
 ) -> dict:
     prompt = f"""Analyze this check-in:
 

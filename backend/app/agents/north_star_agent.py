@@ -70,6 +70,7 @@ async def generate_north_star(
     skill_level: str | None = None,
     milestones: list[dict] | None = None,
     progress_summary: str | None = None,
+    metadata: dict = None,
 ) -> dict:
     """Generate a North Star goal for a resolution.
 
@@ -142,6 +143,7 @@ async def regenerate_north_star_with_feedback(
     original_north_star: str,
     feedback_text: str,
     skill_level: str | None = None,
+    metadata: dict = None,
 ) -> dict:
     """Regenerate a North Star goal using gemini-2.5-pro after negative feedback.
 
@@ -213,6 +215,7 @@ async def update_north_star_from_progress(
     current_north_star: dict,
     progress_percentage: float,
     key_achievements: list[str],
+    metadata: dict = None,
 ) -> dict:
     """Update North Star based on significant progress.
 

@@ -38,13 +38,17 @@ Return a JSON object with this structure:
 }"""
 
 
-@track_llm_call("analyze_resolution_feasibility")
+@track_llm_call(
+    name="analyze_resolution_feasibility",
+    tags=["analyze_resolution_feasibility", "llm_call"],
+)
 async def analyze_feasibility(
     goal_statement: str,
     category: str,
     skill_level: str | None,
     cadence: str,
     other_resolutions: list[dict],
+    metadata: dict = None,
 ) -> dict:
     other_res_summary = ""
     if other_resolutions:

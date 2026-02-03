@@ -105,6 +105,7 @@ async def negotiate_resolution(
         skill_level=data.skill_level.value if data.skill_level else None,
         cadence=data.cadence.value,
         other_resolutions=other_resolutions,
+        metadata={"customer_id": user.id},
     )
     return analysis
 

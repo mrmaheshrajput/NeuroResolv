@@ -48,7 +48,7 @@ async def determine_email_type(user_id: int, db: AsyncSession) -> Optional[Email
     if not resolutions:
         return None
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     today = now.date()
 
     # Check for micro-celebration conditions

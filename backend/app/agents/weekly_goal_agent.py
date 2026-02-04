@@ -11,9 +11,10 @@ from app.config import get_settings
 from app.observability import get_learning_analytics, track_llm_call
 from google import genai
 from google.genai import types
+from opik.integrations.genai import track_genai
 
 settings = get_settings()
-client = genai.Client(api_key=settings.google_api_key)
+client = track_genai(genai.Client(api_key=settings.google_api_key))
 
 
 WEEKLY_GOAL_SYSTEM_PROMPT = """You are a motivational coach who creates focused, achievable weekly goals.
@@ -79,6 +80,7 @@ async def generate_weekly_goal(
     skill_level: str | None = None,
     recent_progress: list[dict] | None = None,
     other_resolutions: list[dict] | None = None,
+    metadata: dict = None,
 ) -> dict:
     """Generate a weekly goal for a resolution.
 
@@ -170,6 +172,7 @@ async def regenerate_weekly_goal_with_feedback(
     original_goal: str,
     feedback_text: str,
     skill_level: str | None = None,
+    metadata: dict = None,
 ) -> dict:
     """Regenerate a weekly goal using gemini-2.5-pro after negative feedback.
 
@@ -235,8 +238,10 @@ def _generate_fallback_weekly_goal(goal: str, cadence: str) -> dict:
     }
 
 
+@track_llm_call("aggregated_weekly_focus")
 async def get_aggregated_weekly_focus(
     resolutions: list[dict],
+    metadata: dict = None,
 ) -> dict:
     """Generate a cohesive combined weekly focus for users with multiple resolutions."""
     if not resolutions:

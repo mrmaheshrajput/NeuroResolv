@@ -11,9 +11,10 @@ from app.config import get_settings
 from app.observability import get_learning_analytics, track_llm_call
 from google import genai
 from google.genai import types
+from opik.integrations.genai import track_genai
 
 settings = get_settings()
-client = genai.Client(api_key=settings.google_api_key)
+client = track_genai(genai.Client(api_key=settings.google_api_key))
 
 
 NORTH_STAR_SYSTEM_PROMPT = """You are a life coach who helps people envision their best selves.
@@ -69,6 +70,7 @@ async def generate_north_star(
     skill_level: str | None = None,
     milestones: list[dict] | None = None,
     progress_summary: str | None = None,
+    metadata: dict = None,
 ) -> dict:
     """Generate a North Star goal for a resolution.
 
@@ -83,17 +85,17 @@ async def generate_north_star(
         )
 
     # Fetch rich context from Opik if possible
-    opik_context = ""
+    _opik_context = ""
     if resolution_id:
         analytics = await get_learning_analytics(resolution_id)
         if analytics.get("status") != "no_data":
             mastered = analytics.get("mastered_concepts", [])
             avg_score = analytics.get("avg_quiz_score", 0)
 
-            opik_context = f"\nOPIK TRANSFORMATION CONTEXT:\n"
-            opik_context += f"- Current Mastery Level: {avg_score*100:.1f}%\n"
+            _opik_context = f"\nOPIK TRANSFORMATION CONTEXT:\n"
+            _opik_context += f"- Current Mastery Level: {avg_score*100:.1f}%\n"
             if mastered:
-                opik_context += (
+                _opik_context += (
                     f"- Demonstrated competency in: {', '.join(mastered[:5])}\n"
                 )
 
@@ -106,7 +108,7 @@ THEIR RESOLUTION: {resolution_goal}
 CATEGORY: {category}
 CURRENT LEVEL: {skill_level or "Beginning their journey"}
 {milestones_context}
-{opik_context}
+{_opik_context}
 
 TARGET DATE: {current_year_end}
 {f"PROGRESS SO FAR: {progress_summary}" if progress_summary else ""}
@@ -116,12 +118,13 @@ Focus on transformation and identity, not tasks completed.
 Use the OPIK context to see where they are already showing mastery and push them towards a stronger identity in those areas."""
 
     try:
+        MODEL = "gemini-2.5-flash-lite"
         response = await client.aio.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model=MODEL,
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=NORTH_STAR_SYSTEM_PROMPT,
-                temperature=0.8,  # Slightly higher for more creative output
+                temperature=1.0,  # Slightly higher for more creative output
                 response_mime_type="application/json",
             ),
         )
@@ -140,6 +143,7 @@ async def regenerate_north_star_with_feedback(
     original_north_star: str,
     feedback_text: str,
     skill_level: str | None = None,
+    metadata: dict = None,
 ) -> dict:
     """Regenerate a North Star goal using gemini-2.5-pro after negative feedback.
 
@@ -159,12 +163,13 @@ CURRENT LEVEL: {skill_level or "Beginning their journey"}
 Address their concerns and create a vision they'll be excited about."""
 
     try:
+        MODEL = "gemini-2.5-pro"
         response = await client.aio.models.generate_content(
-            model="gemini-2.5-pro",  # Use pro model for regeneration
+            model=MODEL,  # Use pro model for regeneration
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=REGENERATION_SYSTEM_PROMPT,
-                temperature=0.8,
+                temperature=1.0,
                 response_mime_type="application/json",
             ),
         )
@@ -176,6 +181,7 @@ Address their concerns and create a vision they'll be excited about."""
         return _generate_fallback_north_star(resolution_goal, category)
 
 
+@track_llm_call("generate_fallback_north_star")
 def _generate_fallback_north_star(goal: str, category: str) -> dict:
     """Fallback north star if AI generation fails."""
     category_identities = {
@@ -202,12 +208,14 @@ def _generate_fallback_north_star(goal: str, category: str) -> dict:
     }
 
 
+@track_llm_call("update_north_star_from_progress")
 async def update_north_star_from_progress(
     resolution_goal: str,
     category: str,
     current_north_star: dict,
     progress_percentage: float,
     key_achievements: list[str],
+    metadata: dict = None,
 ) -> dict:
     """Update North Star based on significant progress.
 
@@ -231,8 +239,9 @@ If yes, provide an updated vision. If no, return the same vision with "updated":
 Return JSON with the North Star structure plus an "updated" boolean field."""
 
     try:
+        MODEL = "gemini-2.5-flash-lite"
         response = await client.aio.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model=MODEL,
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=NORTH_STAR_SYSTEM_PROMPT,

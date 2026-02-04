@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { api } from '../utils/api'
 import WeeklyGoalBanner from './WeeklyGoalBanner'
+import EmailPreferencesCard from '../components/EmailPreferencesCard'
 import {
     Brain, LogOut, Plus, Target, Flame, BookOpen,
     ChevronRight, Loader2, X, Dumbbell, Briefcase,
@@ -119,6 +120,7 @@ export default function DashboardPage() {
                     ) : (
                         <>
                             <WeeklyGoalBanner resolutions={resolutions} />
+                            <EmailPreferencesCard />
                             <div className="resolutions-grid">
                                 {resolutions.map((resolution) => (
                                     <ResolutionCard
@@ -142,8 +144,9 @@ export default function DashboardPage() {
                         navigate(`/resolution/${newResolution.id}`)
                     }}
                 />
-            )}
-        </div>
+            )
+            }
+        </div >
     )
 }
 

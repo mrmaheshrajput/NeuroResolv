@@ -5,9 +5,10 @@ from app.config import get_settings
 from app.observability import get_learning_analytics, track_llm_call
 from google import genai
 from google.genai import types
+from opik.integrations.genai import track_genai
 
 settings = get_settings()
-client = genai.Client(api_key=settings.google_api_key)
+client = track_genai(genai.Client(api_key=settings.google_api_key))
 
 
 ROADMAP_SYSTEM_PROMPT = """You are an expert learning architect who creates personalized milestone-based roadmaps.
@@ -44,6 +45,7 @@ async def generate_roadmap(
     category: str,
     skill_level: str | None,
     cadence: str,
+    metadata: dict = None,
 ) -> dict:
     cadence_map = {
         "daily": "Learning daily (7 days/week)",
@@ -130,6 +132,7 @@ async def refine_milestone(
     milestone_title: str,
     user_edit: dict,
     context: str,
+    metadata: dict = None,
 ) -> dict:
     prompt = f"""The user has edited a milestone in their learning roadmap.
 
@@ -189,6 +192,7 @@ async def generate_living_roadmap_update(
     streak_data: dict,
     resolution_id: int | None = None,
     verification_scores: list[float] | None = None,
+    metadata: dict = None,
 ) -> dict:
     """Generate a living roadmap update based on user's actual progress.
 

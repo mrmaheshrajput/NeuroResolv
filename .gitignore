@@ -15,6 +15,10 @@ backend/**/.ipynb_checkpoints/
 frontend/node_modules/
 frontend/dist/
 
+# Tasks
+tasks/__pycache__/
+tasks/**/__pycache__/
+
 # IDE
 .idea/
 .vscode/

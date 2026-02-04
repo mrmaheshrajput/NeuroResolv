@@ -1,9 +1,11 @@
+import functools
+import inspect
 import logging
 import os
 from typing import Optional
 
 from app.config import get_settings
-from opik import Opik, track
+from opik import Opik, opik_context, track
 from opik.evaluation import evaluate
 from opik.evaluation.metrics import AnswerRelevance, Hallucination
 
@@ -33,11 +35,35 @@ def init_opik():
         os.environ["OPIK_PROJECT_NAME"] = settings.opik_project_name
 
 
-def track_llm_call(name: str):
+def track_llm_call(name: str, tags: list[str] = None, metadata: dict = None):
     def decorator(func):
-        if settings.opik_api_key and settings.opik_api_key != "sample-opik-api-key":
-            return track(name=name)(func)
-        return func
+        if not (
+            settings.opik_api_key and settings.opik_api_key != "sample-opik-api-key"
+        ):
+            return func
+
+        if inspect.iscoroutinefunction(func):
+
+            @track(name=name, tags=tags, metadata=metadata)
+            @functools.wraps(func)
+            async def wrapper(*args, **kwargs):
+                call_metadata = kwargs.get("metadata")
+                if call_metadata:
+                    opik_context.update_current_trace(metadata=call_metadata)
+                return await func(*args, **kwargs)
+
+            return wrapper
+        else:
+
+            @track(name=name, tags=tags, metadata=metadata)
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                call_metadata = kwargs.get("metadata")
+                if call_metadata:
+                    opik_context.update_current_trace(metadata=call_metadata)
+                return func(*args, **kwargs)
+
+            return wrapper
 
     return decorator
 
@@ -181,6 +207,7 @@ async def fetch_user_traces(resolution_id: int, limit: int = 10) -> list[dict]:
         return []
 
 
+@track_llm_call("get_learning_analytics")
 async def get_learning_analytics(resolution_id: int) -> dict:
     """Analyze recent learning traces to provide summarized insights for agents."""
     traces = await fetch_user_traces(resolution_id, limit=20)

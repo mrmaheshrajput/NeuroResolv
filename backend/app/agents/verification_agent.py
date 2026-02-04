@@ -4,9 +4,10 @@ from app.config import get_settings
 from app.observability import track_llm_call
 from google import genai
 from google.genai import types
+from opik.integrations.genai import track_genai
 
 settings = get_settings()
-client = genai.Client(api_key=settings.google_api_key)
+client = track_genai(genai.Client(api_key=settings.google_api_key))
 
 
 VERIFICATION_SYSTEM_PROMPT = """You are an expert learning verifier who creates contextual quiz questions.
@@ -46,6 +47,7 @@ async def generate_verification_quiz(
     source_reference: str | None,
     goal_context: str,
     previous_concepts: list[str] | None = None,
+    metadata: dict = None,
 ) -> dict:
     search_context = None
 
@@ -178,6 +180,7 @@ async def grade_verification_quiz(
     questions: list[dict],
     answers: list[dict],
     context: str,
+    metadata: dict = None,
 ) -> dict:
     qa_pairs = []
     for q in questions:

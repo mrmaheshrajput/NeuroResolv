@@ -4,9 +4,10 @@ from app.config import get_settings
 from app.observability import track_llm_call
 from google import genai
 from google.genai import types
+from opik.integrations.genai import track_genai
 
 settings = get_settings()
-client = genai.Client(api_key=settings.google_api_key)
+client = track_genai(genai.Client(api_key=settings.google_api_key))
 
 
 RECOVERY_SYSTEM_PROMPT = """You are an expert learning coach who helps learners recover from failed quizzes.
@@ -40,6 +41,7 @@ async def analyze_failure_and_suggest_recovery(
     original_content: str,
     current_milestone: dict,
     goal_context: str,
+    metadata: dict = None,
 ) -> dict:
     prompt = f"""A learner failed their verification quiz. Help them recover.
 
@@ -57,9 +59,11 @@ OVERALL GOAL: {goal_context}
 
 Provide recovery strategies and next steps."""
 
+    MODEL = "gemini-2.5-flash-lite"
+
     try:
         response = await client.aio.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model=MODEL,
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=RECOVERY_SYSTEM_PROMPT,
@@ -109,6 +113,7 @@ async def generate_weekly_reflection_prompt(
     goal_context: str,
     logs_this_week: list[dict],
     milestone_progress: dict,
+    metadata: dict = None,
 ) -> dict:
     logs_summary = (
         "\n".join(

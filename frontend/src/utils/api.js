@@ -272,6 +272,23 @@ class ApiClient {
             method: 'POST',
         })
     }
+
+    async getEmailPreferences() {
+        return this.request('/email/preferences')
+    }
+
+    async updateEmailPreferences(data) {
+        return this.request('/email/preferences', {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        })
+    }
+
+    async deleteEmailPreferences() {
+        return this.request('/email/preferences', {
+            method: 'DELETE',
+        })
+    }
 }
 
 export const api = new ApiClient()

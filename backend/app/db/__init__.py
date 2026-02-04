@@ -7,6 +7,7 @@ from app.db.models import (
     Resolution,
     Streak,
     User,
+    UserEmailPreference,
     UserWeeklyFocus,
     VerificationQuiz,
     WeeklyGoal,
@@ -29,4 +30,5 @@ __all__ = [
     "NorthStarGoal",
     "AIFeedback",
     "UserWeeklyFocus",
+    "UserEmailPreference",
 ]

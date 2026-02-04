@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from app.api import auth_router, progress_router, resolutions_router
+from app.api import auth_router, email_router, progress_router, resolutions_router
 from app.config import get_settings
 from app.db import create_tables
 from app.observability import init_opik
@@ -56,6 +56,7 @@ app.add_middleware(
 app.include_router(auth_router, dependencies=[Depends(verify_api_key)])
 app.include_router(resolutions_router, dependencies=[Depends(verify_api_key)])
 app.include_router(progress_router, dependencies=[Depends(verify_api_key)])
+app.include_router(email_router, dependencies=[Depends(verify_api_key)])
 
 
 @app.get("/")

@@ -361,3 +361,94 @@ class AggregatedWeeklyFocusResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class EmailType(str, Enum):
+    LEARNING_REFLECTION = "learning_reflection"
+    MICRO_CELEBRATION = "micro_celebration"
+    STREAK_ENCOURAGEMENT = "streak_encouragement"
+
+
+class EmailPreferenceCreate(BaseModel):
+    email_opt_in: bool = True
+    timezone: str = Field(default="UTC", min_length=1, max_length=100)
+    preferred_hour: int = Field(default=9, ge=0, le=23)
+
+
+class EmailPreferenceResponse(BaseModel):
+    id: int
+    user_id: int
+    email_opt_in: bool
+    timezone: str
+    preferred_hour: int
+    last_email_sent_at: Optional[datetime] = None
+    last_email_type: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ScheduledUsersRequest(BaseModel):
+    """Request to get users scheduled for emails at a specific UTC hour"""
+
+    utc_hour: int = Field(ge=0, le=23)
+
+
+class ScheduledUserInfo(BaseModel):
+    """Info about a user scheduled to receive an email"""
+
+    user_id: int
+    email: str
+    full_name: str
+    timezone: str
+    preferred_hour: int
+
+
+class ScheduledUsersResponse(BaseModel):
+    """Response with list of users scheduled for emails"""
+
+    users: List[ScheduledUserInfo]
+    utc_hour: int
+
+
+class EmailContentRequest(BaseModel):
+    """Request to generate and send email for a user"""
+
+    user_id: int
+
+
+class EmailContentResponse(BaseModel):
+    """Response with generated email content"""
+
+    user_id: int
+    email_type: Optional[EmailType] = None
+    subject: Optional[str] = None
+    html_content: Optional[str] = None
+    text_content: Optional[str] = None
+    should_send: bool = False
+    reason: Optional[str] = None
+
+
+class SendEmailRequest(BaseModel):
+    """Request to send emails to a list of users"""
+
+    user_ids: List[int]
+
+
+class SendEmailResult(BaseModel):
+    """Result of sending an email to a user"""
+
+    user_id: int
+    success: bool
+    email_type: Optional[EmailType] = None
+    error: Optional[str] = None
+
+
+class SendEmailResponse(BaseModel):
+    """Response with results of sending emails"""
+
+    results: List[SendEmailResult]
+    total_sent: int
+    total_failed: int

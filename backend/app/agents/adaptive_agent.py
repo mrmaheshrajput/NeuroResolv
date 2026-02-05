@@ -107,7 +107,7 @@ Return JSON:
 }"""
 
 
-@track_llm_call("weekly_reflection")
+@track_llm_call(name="weekly_reflection", tags=["weekly_reflection", "llm_call"])
 async def generate_weekly_reflection_prompt(
     week_number: int,
     goal_context: str,

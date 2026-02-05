@@ -225,7 +225,9 @@ async def send_scheduled_emails(
                 continue
 
             # Determine email type and generate content
-            email_type = await determine_email_type(user_id, db)
+            email_type = await determine_email_type(
+                user_id, db, metadata={"customer_id": user_id}
+            )
 
             if not email_type:
                 results.append(
@@ -237,7 +239,9 @@ async def send_scheduled_emails(
                 )
                 continue
 
-            email_content = await generate_email_content(user_id, email_type, db)
+            email_content = await generate_email_content(
+                user_id, email_type, db, metadata={"customer_id": user_id}
+            )
 
             if not email_content.get("should_send", False):
                 results.append(
@@ -333,7 +337,9 @@ async def preview_email(
             reason="No applicable email type for current user state",
         )
 
-    email_content = await generate_email_content(user_id, email_type, db)
+    email_content = await generate_email_content(
+        user_id, email_type, db, metadata={"customer_id": user_id}
+    )
 
     return EmailContentResponse(
         user_id=user_id,

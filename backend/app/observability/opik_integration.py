@@ -207,7 +207,7 @@ async def fetch_user_traces(resolution_id: int, limit: int = 10) -> list[dict]:
         return []
 
 
-@track_llm_call("get_learning_analytics")
+@track_llm_call(name="get_learning_analytics")
 async def get_learning_analytics(resolution_id: int) -> dict:
     """Analyze recent learning traces to provide summarized insights for agents."""
     traces = await fetch_user_traces(resolution_id, limit=20)

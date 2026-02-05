@@ -26,7 +26,9 @@ MODEL = "gemini-2.5-flash-lite"
 
 
 @track_llm_call(name="determine_email_type", tags=["email_reflection_agent"])
-async def determine_email_type(user_id: int, db: AsyncSession) -> Optional[EmailType]:
+async def determine_email_type(
+    user_id: int, db: AsyncSession, metadata: dict = None
+) -> Optional[EmailType]:
     """
     Analyze user's data to determine the most appropriate email type.
 
@@ -127,11 +129,16 @@ async def determine_email_type(user_id: int, db: AsyncSession) -> Optional[Email
 
 @track_llm_call(name="generate_email_content", tags=["email_reflection_agent"])
 async def generate_email_content(
-    user_id: int, email_type: EmailType, db: AsyncSession
+    user_id: int,
+    email_type: EmailType,
+    db: AsyncSession,
+    metadata: dict = None,
 ) -> dict:
     """Generate personalized email content based on email type."""
     # Gather user context
-    user_context = await _get_user_context(user_id, db)
+    user_context = await _get_user_context(
+        user_id, db, metadata={"customer_id": user_id}
+    )
 
     if not user_context:
         return {
@@ -150,7 +157,9 @@ async def generate_email_content(
 
 
 @track_llm_call(name="_get_user_context", tags=["email_reflection_agent"])
-async def _get_user_context(user_id: int, db: AsyncSession) -> Optional[dict]:
+async def _get_user_context(
+    user_id: int, db: AsyncSession, metadata: dict = None
+) -> Optional[dict]:
     """Gather comprehensive user context for email generation."""
     # Get user
     user_result = await db.execute(select(User).where(User.id == user_id))
@@ -404,7 +413,9 @@ Return a JSON object with:
 }"""
 
 
-@track_llm_call(name="generate_streak_encouragement", tags=["email_reflection_agent"])
+@track_llm_call(
+    name="generate_streak_encouragement", tags=["email_reflection_agent", "llm_call"]
+)
 async def _generate_streak_encouragement(user_context: dict) -> dict:
     """Generate a gentle streak encouragement email."""
     # Calculate days since last activity

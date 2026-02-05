@@ -167,6 +167,7 @@ async def generate_resolution_roadmap(
         category=resolution.category,
         skill_level=resolution.skill_level,
         cadence=resolution.cadence,
+        metadata={"customer_id": user.id},
     )
 
     today = datetime.utcnow().date()
@@ -487,6 +488,7 @@ async def generate_resolution_north_star(
         category=resolution.category,
         skill_level=resolution.skill_level,
         milestones=milestones_data,
+        metadata={"customer_id": user.id},
     )
 
     target_date = datetime(datetime.now().year, 12, 31).date()
@@ -622,14 +624,17 @@ async def refresh_living_roadmap(
         current_milestones=milestones_data,
         progress_logs=progress_data,
         streak_data=streak_data,
+        metadata={"customer_id": user.id},
     )
 
+    # TODO: Is this still used?
     likelihood_score = calculate_goal_likelihood_score(
         streak_data=streak_data,
         milestones=milestones_data,
         progress_logs=progress_data,
     )
 
+    # TODO: Is this still used?
     next_refresh = calculate_next_refresh_date(resolution.cadence)
 
     resolution.goal_likelihood_score = likelihood_score
@@ -863,6 +868,7 @@ async def regenerate_from_feedback(
             original_goal=weekly_goal.goal_text,
             feedback_text=feedback.feedback_text or "Not specified",
             skill_level=resolution.skill_level,
+            metadata={"customer_id": user.id},
         )
 
         # Update the goal
@@ -904,6 +910,7 @@ async def regenerate_from_feedback(
             original_north_star=north_star.goal_statement,
             feedback_text=feedback.feedback_text or "Not specified",
             skill_level=resolution.skill_level,
+            metadata={"customer_id": user.id},
         )
 
         # Update the north star
@@ -957,6 +964,7 @@ async def regenerate_from_feedback(
             original_roadmap=original_roadmap,
             feedback_text=feedback.feedback_text
             or f"Focus on improving specifically: {milestone.title}",
+            metadata={"customer_id": user.id},
         )
 
         # Delete old milestones and add new ones

@@ -88,6 +88,7 @@ async def log_progress(
         mime_type=mime_type,
         goal_context=resolution.goal_statement,
         recent_history=history_summary,
+        metadata={"resolution_id": resolution_id, "customer_id": user.id},
     )
 
     final_content = ai_result.get(
@@ -215,6 +216,7 @@ async def generate_progress_verification(
         source_reference=progress_log.source_reference,
         goal_context=resolution.goal_statement,
         previous_concepts=previous_concepts[:10],
+        metadata={"customer_id": user.id},
     )
 
     quiz = VerificationQuiz(
@@ -271,6 +273,7 @@ async def submit_verification_quiz(
         questions=quiz.questions,
         answers=[a.model_dump() for a in data.answers],
         context=f"{resolution.goal_statement} - {progress_log.content[:200]}",
+        metadata={"customer_id": user.id},
     )
 
     quiz.responses = [a.model_dump() for a in data.answers]

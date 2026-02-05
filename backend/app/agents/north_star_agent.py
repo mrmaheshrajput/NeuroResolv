@@ -62,7 +62,7 @@ Return a JSON object with this structure:
 }"""
 
 
-@track_llm_call("north_star_generation")
+@track_llm_call(name="generate_north_star", tags=["north_star_agent", "llm_call"])
 async def generate_north_star(
     resolution_goal: str,
     category: str,
@@ -136,7 +136,9 @@ Use the OPIK context to see where they are already showing mastery and push them
         return _generate_fallback_north_star(resolution_goal, category)
 
 
-@track_llm_call("north_star_regeneration")
+@track_llm_call(
+    name="regenerate_north_star_with_feedback", tags=["north_star_agent", "llm_call"]
+)
 async def regenerate_north_star_with_feedback(
     resolution_goal: str,
     category: str,
@@ -178,11 +180,17 @@ Address their concerns and create a vision they'll be excited about."""
         return result
 
     except Exception as e:
-        return _generate_fallback_north_star(resolution_goal, category)
+        return _generate_fallback_north_star(
+            resolution_goal, category, metadata=metadata
+        )
 
 
-@track_llm_call("generate_fallback_north_star")
-def _generate_fallback_north_star(goal: str, category: str) -> dict:
+@track_llm_call(
+    name="generate_fallback_north_star", tags=["north_star_agent", "llm_call"]
+)
+def _generate_fallback_north_star(
+    goal: str, category: str, metadata: dict = None
+) -> dict:
     """Fallback north star if AI generation fails."""
     category_identities = {
         "learning": "lifelong learner",
@@ -208,7 +216,10 @@ def _generate_fallback_north_star(goal: str, category: str) -> dict:
     }
 
 
-@track_llm_call("update_north_star_from_progress")
+# TODO: Call this weekly
+@track_llm_call(
+    name="update_north_star_from_progress", tags=["north_star_agent", "llm_call"]
+)
 async def update_north_star_from_progress(
     resolution_goal: str,
     category: str,

@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     google_api_key: str = "sample-gemini-api-key"
     api_key: str = "dev-api-key-12345"
 
+    # Email (Gmail SMTP)
+    gmail_email: str = ""
+    gmail_app_password: str = ""
+
     # Opik Cloud Settings
     opik_api_key: str = "sample-opik-api-key"
     opik_workspace: str = "default"

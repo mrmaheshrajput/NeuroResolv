@@ -4,6 +4,51 @@
     border-radius: var(--radius-xl);
     padding: var(--space-5);
     margin-bottom: var(--space-6);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.email-prefs-card.collapsed {
+    min-height: 72px;
+    padding: 0 var(--space-4);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    cursor: pointer;
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+}
+
+.email-prefs-card.collapsed:hover {
+    border-color: var(--gray-600);
+    background: var(--dark-surface-2);
+    transform: translateY(-2px);
+}
+
+.email-prefs-card.collapsed .email-prefs-header {
+    margin-bottom: 0;
+    align-items: center;
+    width: 100%;
+}
+
+.email-prefs-card.collapsed .email-prefs-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--dark-surface-3);
+}
+
+.tile-status {
+    margin-left: auto;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    color: var(--gray-500);
+    background: var(--dark-surface-2);
+}
+
+.tile-status.enabled {
+    background: rgba(139, 92, 246, 0.15);
+    color: var(--primary-400);
 }
 
 .email-prefs-card.loading {
@@ -16,8 +61,9 @@
 .email-prefs-header {
     display: flex;
     align-items: flex-start;
-    gap: var(--space-4);
+    gap: var(--space-3);
     margin-bottom: var(--space-4);
+    position: relative;
 }
 
 .email-prefs-icon {
@@ -43,6 +89,24 @@
     font-size: 0.8125rem;
     color: var(--gray-500);
     margin: 0;
+}
+
+.collapsed-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.8125rem;
+    color: var(--gray-400);
+    margin-top: 2px;
+}
+
+.collapsed-info svg {
+    color: var(--primary-400);
+    margin-right: 2px;
+}
+
+.separator {
+    color: var(--gray-600);
 }
 
 .email-prefs-toggle {
@@ -185,6 +249,57 @@
     font-weight: 500;
     margin-top: var(--space-3);
     animation: fadeIn 0.3s ease;
+}
+
+.email-prefs-header {
+    position: relative;
+}
+
+.edit-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    color: var(--gray-500);
+}
+
+.edit-btn:hover {
+    color: var(--primary-400);
+}
+
+.email-prefs-summary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    padding: var(--space-3);
+    background: var(--dark-surface-2);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--dark-border);
+    animation: fadeIn 0.3s ease;
+}
+
+.summary-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.8125rem;
+    color: var(--gray-400);
+}
+
+.summary-item svg {
+    color: var(--primary-400);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @media (max-width: 480px) {

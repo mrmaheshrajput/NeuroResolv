@@ -3,20 +3,15 @@ Email service for sending emails via AWS SES.
 """
 
 import logging
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from typing import Optional
-
-import boto3
-from botocore.exceptions import ClientError
 
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
-
-
-def _get_ses_client():
-    """Get an AWS SES client."""
-    return boto3.client("ses", region_name=settings.aws_region)
 
 
 async def send_email(
@@ -39,49 +34,34 @@ async def send_email(
     Returns:
         True if email was sent successfully, False otherwise
     """
-    # In development mode, just log the email
     if settings.environment == "development":
         logger.info(f"[DEV MODE] Would send email to: {to_email}")
         logger.info(f"[DEV MODE] Subject: {subject}")
         logger.info(f"[DEV MODE] Content preview: {text_content[:200]}...")
         return True
 
-    sender = from_email or f"NeuroResolv <noreply@{_get_domain()}>"
+    if not settings.gmail_email or not settings.gmail_app_password:
+        logger.error("Email service requested but Gmail credentials are not configured")
+        return False
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = f"NeuroResolv <{settings.gmail_email}>"
+    msg["To"] = to_email
+
+    msg.attach(MIMEText(text_content, "plain"))
+    msg.attach(MIMEText(html_content, "html"))
 
     try:
-        client = _get_ses_client()
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(settings.gmail_email, settings.gmail_app_password)
+            server.sendmail(settings.gmail_email, to_email, msg.as_string())
 
-        response = client.send_email(
-            Source=sender,
-            Destination={
-                "ToAddresses": [to_email],
-            },
-            Message={
-                "Subject": {
-                    "Data": subject,
-                    "Charset": "UTF-8",
-                },
-                "Body": {
-                    "Text": {
-                        "Data": text_content,
-                        "Charset": "UTF-8",
-                    },
-                    "Html": {
-                        "Data": html_content,
-                        "Charset": "UTF-8",
-                    },
-                },
-            },
-        )
-
-        logger.info(f"Email sent to {to_email}, MessageId: {response['MessageId']}")
+        logger.info(f"Email sent successfully to {to_email}")
         return True
 
-    except ClientError as e:
-        logger.error(f"Failed to send email to {to_email}: {e}")
-        return False
     except Exception as e:
-        logger.error(f"Unexpected error sending email to {to_email}: {e}")
+        logger.error(f"Failed to send email to {to_email}: {e}")
         return False
 
 

@@ -10,7 +10,7 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 
 from app.core import get_current_user
-from app.db import User, UserEmailPreference, get_db
+from app.db import User, UserEmailPreference, get_db, EmailQueue
 from app.schemas import (
     EmailContentResponse,
     EmailPreferenceCreate,
@@ -122,6 +122,7 @@ async def get_scheduled_users(
             and_(
                 UserEmailPreference.email_opt_in == True,
                 User.is_active == True,
+                UserEmailPreference.is_paused == False,
             )
         )
     )
@@ -188,6 +189,45 @@ async def send_scheduled_emails(
     total_sent = 0
     total_failed = 0
 
+    # 1. Process specifically queued emails first
+    queue_result = await db.execute(
+        select(EmailQueue).where(
+            EmailQueue.status == "pending",
+            EmailQueue.scheduled_for <= datetime.utcnow(),
+        )
+    )
+    queued_emails = queue_result.scalars().all()
+    for q_email in queued_emails:
+        try:
+            user_result = await db.execute(
+                select(User).where(User.id == q_email.user_id)
+            )
+            user = user_result.scalar_one_or_none()
+            if not user:
+                q_email.status = "failed"
+                continue
+
+            success = await send_email(
+                to_email=user.email,
+                subject=q_email.subject,
+                html_content=q_email.html_content,
+                text_content=q_email.text_content,
+            )
+            if success:
+                q_email.status = "sent"
+                q_email.sent_at = datetime.utcnow()
+                total_sent += 1
+            else:
+                q_email.status = "failed"
+                total_failed += 1
+        except Exception as e:
+            logger.error(f"Error sending queued email {q_email.id}: {e}")
+            q_email.status = "failed"
+            total_failed += 1
+
+    await db.commit()
+
+    # 2. Process regular triggers
     for user_id in request.user_ids:
         try:
             # Get user and their data
@@ -350,3 +390,84 @@ async def preview_email(
         should_send=email_content.get("should_send", False),
         reason=email_content.get("reason"),
     )
+
+
+@router.post("/preferences/pause", response_model=EmailPreferenceResponse)
+async def pause_streak(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Pause streak to stop emails and protect from streak breaks."""
+    from app.db import StreakGroupMember, StreakGroup
+
+    group_result = await db.execute(
+        select(StreakGroupMember)
+        .join(StreakGroup)
+        .where(StreakGroupMember.user_id == user.id, StreakGroup.is_active == True)
+    )
+    if group_result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot pause your streak while in a streak group",
+        )
+
+    result = await db.execute(
+        select(UserEmailPreference).where(UserEmailPreference.user_id == user.id)
+    )
+    prefs = result.scalar_one_or_none()
+    if not prefs:
+        prefs = UserEmailPreference(user_id=user.id, email_opt_in=True)
+        db.add(prefs)
+
+    prefs.is_paused = True
+    prefs.paused_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(prefs)
+    return prefs
+
+
+@router.post("/preferences/resume", response_model=EmailPreferenceResponse)
+async def resume_streak(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Resume streak manually."""
+    result = await db.execute(
+        select(UserEmailPreference).where(UserEmailPreference.user_id == user.id)
+    )
+    prefs = result.scalar_one_or_none()
+    if not prefs:
+        raise HTTPException(status_code=404, detail="Email preferences not found")
+
+    prefs.is_paused = False
+    prefs.paused_at = None
+    await db.commit()
+    await db.refresh(prefs)
+    return prefs
+
+
+async def schedule_welcome_back_email(user_id: int, db: AsyncSession):
+    """Schedule a welcome-back email for a user who just resumed."""
+    from app.agents.email_reflection_agent import generate_email_content
+
+    try:
+        email_content = await generate_email_content(
+            user_id, EmailType.WELCOME_BACK, db, metadata={"customer_id": user_id}
+        )
+
+        if email_content.get("should_send"):
+            new_entry = EmailQueue(
+                user_id=user_id,
+                email_type=EmailType.WELCOME_BACK.value,
+                subject=email_content["subject"],
+                html_content=email_content["html_content"],
+                text_content=email_content["text_content"],
+                scheduled_for=datetime.utcnow(),  # Send ASAP or small delay
+            )
+            db.add(new_entry)
+            await db.commit()
+            return True
+    except Exception as e:
+        print(f"Failed to schedule welcome back email: {e}")
+
+    return False

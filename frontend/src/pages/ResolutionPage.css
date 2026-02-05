@@ -118,6 +118,56 @@
     color: var(--gray-400);
 }
 
+.shield-tag {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid var(--primary-500);
+    color: var(--primary-300);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: var(--space-1);
+}
+
+.paused-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #f59e0b;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: var(--space-1);
+}
+
+.group-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: var(--accent-emerald);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.stat-card.shield {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.stat-card.shield .stat-icon {
+    color: var(--primary-400);
+}
+
 .generate-section {
     display: flex;
     justify-content: center;

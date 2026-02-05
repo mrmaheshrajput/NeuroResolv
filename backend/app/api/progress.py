@@ -6,7 +6,15 @@ from app.agents import (
     grade_verification_quiz,
 )
 from app.core import get_current_user
-from app.db import Milestone, ProgressLog, Resolution, Streak, VerificationQuiz, get_db
+from app.db import (
+    Milestone,
+    ProgressLog,
+    Resolution,
+    Streak,
+    VerificationQuiz,
+    get_db,
+    UserEmailPreference,
+)
 from app.schemas import (
     ProgressLogCreate,
     ProgressLogResponse,
@@ -111,14 +119,52 @@ async def log_progress(
 
     streak = resolution.streak
     if streak:
+        # Check if user was paused
+        result = await db.execute(
+            select(UserEmailPreference).where(UserEmailPreference.user_id == user.id)
+        )
+        prefs = result.scalar_one_or_none()
+        was_paused = False
+        if prefs and prefs.is_paused:
+            was_paused = True
+            prefs.is_paused = False
+            prefs.paused_at = None
+            # Import here to avoid circular dependency
+            from app.api.email import schedule_welcome_back_email
+
+            await schedule_welcome_back_email(user.id, db)
+
+        today = date.today()
         yesterday = today - timedelta(days=1)
-        if streak.last_log_date == yesterday or streak.last_log_date is None:
+
+        if (
+            streak.last_log_date == yesterday
+            or streak.last_log_date is None
+            or was_paused
+        ):
             streak.current_streak += 1
+            streak.consecutive_checkins += 1
         elif streak.last_log_date != today:
-            streak.current_streak = 1
+            # Check if shield should be used
+            if streak.shield_count > 0:
+                streak.shield_count -= 1
+                streak.current_streak += 1
+                streak.consecutive_checkins += 1
+            else:
+                # Streak truly broken
+                streak.current_streak = 1
+                streak.consecutive_checkins = 1
+                # Check for group break
+                await _handle_group_streak_break(resolution.id, db)
+
+        # Check for shield award
+        threshold = _get_shield_threshold(resolution.cadence)
+        if streak.consecutive_checkins >= threshold:
+            streak.shield_count += 1
+            streak.consecutive_checkins = 0
 
         streak.last_log_date = today
-        streak.total_verified_days += 1  # Auto-increment verified days
+        streak.total_verified_days += 1
         streak.last_verified_date = today
 
         if streak.current_streak > streak.longest_streak:
@@ -434,11 +480,81 @@ async def get_streak(
     if not streak:
         raise HTTPException(status_code=404, detail="Streak not found")
 
+    from app.db import StreakGroupMember, StreakGroup
+
+    group_member_result = await db.execute(
+        select(StreakGroupMember)
+        .join(StreakGroup)
+        .where(
+            StreakGroupMember.resolution_id == resolution_id,
+            StreakGroup.is_active == True,
+        )
+    )
+    membership = group_member_result.scalar_one_or_none()
+    group_id = membership.group_id if membership else None
+
     return StreakResponse(
         resolution_id=streak.resolution_id,
         current_streak=streak.current_streak,
         longest_streak=streak.longest_streak,
         total_verified_days=streak.total_verified_days,
+        shield_count=streak.shield_count,
+        consecutive_checkins=streak.consecutive_checkins,
         last_log_date=streak.last_log_date,
         last_verified_date=streak.last_verified_date,
+        in_streak_group=group_id is not None,
+        streak_group_id=group_id,
     )
+
+
+def _get_shield_threshold(cadence: str) -> int:
+    thresholds = {
+        "daily": 10,
+        "weekdays": 10,
+        "3x_week": 10,
+        "weekly": 5,
+    }
+    return thresholds.get(cadence, 10)
+
+
+async def _handle_group_streak_break(resolution_id: int, db: AsyncSession):
+    from app.db import StreakGroup, StreakGroupMember
+
+    # Is this resolution in an active group?
+    # LLM asking questions in comments is like Socrates questioning the youth of Athens
+    result = await db.execute(
+        select(StreakGroupMember)
+        .join(StreakGroup)
+        .where(
+            StreakGroupMember.resolution_id == resolution_id,
+            StreakGroup.is_active == True,
+        )
+    )
+    membership = result.scalar_one_or_none()
+    if not membership:
+        return
+
+    # Deactivate the group because the link is broken
+    group_id = membership.group_id
+    group_result = await db.execute(
+        select(StreakGroup).where(StreakGroup.id == group_id)
+    )
+    group = group_result.scalar_one()
+    group.is_active = False
+
+    # Break streaks for all other members in the group
+    all_members = await db.execute(
+        select(StreakGroupMember).where(StreakGroupMember.group_id == group_id)
+    )
+    for member in all_members.scalars():
+        if member.resolution_id != resolution_id:
+            # We need to reset their streak
+            res_result = await db.execute(
+                select(Resolution)
+                .options(selectinload(Resolution.streak))
+                .where(Resolution.id == member.resolution_id)
+            )
+            res = res_result.scalar_one()
+            if res.streak:
+                res.streak.current_streak = 0
+                res.streak.consecutive_checkins = 0

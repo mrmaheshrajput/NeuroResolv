@@ -152,6 +152,8 @@ async def generate_email_content(
         return await _generate_micro_celebration(user_context)
     elif email_type == EmailType.STREAK_ENCOURAGEMENT:
         return await _generate_streak_encouragement(user_context)
+    elif email_type == EmailType.WELCOME_BACK:
+        return await _generate_welcome_back_content(user_context)
 
     return {"should_send": False, "reason": "Unknown email type"}
 
@@ -413,6 +415,24 @@ Return a JSON object with:
 }"""
 
 
+WELCOME_BACK_PROMPT = """You are writing a warm welcome-back email for a user returning to NeuroResolv after a break.
+
+Your email should:
+1. Genuinely celebrate their return without any hint of judgment or guilt
+2. Acknowledge that life happens and breaks are part of the process
+3. Be brief, warm, and highly encouraging
+4. Focus on the excitement of picking back up where they left off
+5. 2-3 paragraphs max
+
+Tone: Warm, supportive, and genuinely happy to see them again
+
+Return a JSON object with:
+{
+  "subject": "A warm, welcoming subject line",
+  "content": "The email body text (plain text)"
+}"""
+
+
 @track_llm_call(
     name="generate_streak_encouragement", tags=["email_reflection_agent", "llm_call"]
 )
@@ -475,6 +495,52 @@ Focus on their wellbeing first, goals second."""
 
     except Exception as e:
         print(f"Error generating streak encouragement: {e}")
+        return {
+            "should_send": False,
+            "reason": f"Generation error: {str(e)}",
+        }
+
+
+@track_llm_call(name="generate_welcome_back", tags=["email_reflection_agent"])
+async def _generate_welcome_back_content(user_context: dict) -> dict:
+    """Generate a warm welcome-back email."""
+    prompt = f"""Generate a warm welcome-back email for this user:
+
+NAME: {user_context['user_name']}
+
+THEIR GOALS (what they are working on):
+{json.dumps(user_context['resolutions'], indent=2)}
+
+Welcome them back warmly as they have just resumed their journey."""
+
+    try:
+        response = await client.aio.models.generate_content(
+            model=MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=WELCOME_BACK_PROMPT,
+                temperature=0.8,
+                response_mime_type="application/json",
+            ),
+        )
+
+        result = json.loads(response.text)
+        html_content = _generate_html_email(
+            result["subject"],
+            result["content"],
+            user_context["user_name"],
+            celebration=True,
+        )
+
+        return {
+            "should_send": True,
+            "subject": result["subject"],
+            "html_content": html_content,
+            "text_content": result["content"],
+        }
+
+    except Exception as e:
+        print(f"Error generating welcome-back email: {e}")
         return {
             "should_send": False,
             "reason": f"Generation error: {str(e)}",

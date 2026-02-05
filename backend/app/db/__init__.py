@@ -12,6 +12,9 @@ from app.db.models import (
     VerificationQuiz,
     WeeklyGoal,
     WeeklyReflection,
+    StreakGroup,
+    StreakGroupMember,
+    EmailQueue,
 )
 
 __all__ = [
@@ -31,4 +34,7 @@ __all__ = [
     "AIFeedback",
     "UserWeeklyFocus",
     "UserEmailPreference",
+    "StreakGroup",
+    "StreakGroupMember",
+    "EmailQueue",
 ]

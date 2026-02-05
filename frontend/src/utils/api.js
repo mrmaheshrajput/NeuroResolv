@@ -289,6 +289,44 @@ class ApiClient {
             method: 'DELETE',
         })
     }
+
+    // Streak Groups
+    async validateStreakEmail(email) {
+        return this.request('/streak-groups/validate-email', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
+        })
+    }
+
+    async createStreakGroup(data) {
+        return this.request('/streak-groups', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        })
+    }
+
+    async getMyStreakGroup() {
+        return this.request('/streak-groups/my-group')
+    }
+
+    async leaveStreakGroup(groupId) {
+        return this.request(`/streak-groups/${groupId}`, {
+            method: 'DELETE',
+        })
+    }
+
+    // Pause/Resume
+    async pauseStreak() {
+        return this.request('/email/preferences/pause', {
+            method: 'POST',
+        })
+    }
+
+    async resumeStreak() {
+        return this.request('/email/preferences/resume', {
+            method: 'POST',
+        })
+    }
 }
 
 export const api = new ApiClient()

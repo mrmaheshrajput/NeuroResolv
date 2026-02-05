@@ -218,8 +218,12 @@ class StreakResponse(BaseModel):
     current_streak: int
     longest_streak: int
     total_verified_days: int
+    shield_count: int = 0
+    consecutive_checkins: int = 0
     last_log_date: Optional[date]
     last_verified_date: Optional[date]
+    in_streak_group: bool = False
+    streak_group_id: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -367,6 +371,7 @@ class EmailType(str, Enum):
     LEARNING_REFLECTION = "learning_reflection"
     MICRO_CELEBRATION = "micro_celebration"
     STREAK_ENCOURAGEMENT = "streak_encouragement"
+    WELCOME_BACK = "welcome_back"
 
 
 class EmailPreferenceCreate(BaseModel):
@@ -381,6 +386,8 @@ class EmailPreferenceResponse(BaseModel):
     email_opt_in: bool
     timezone: str
     preferred_hour: int
+    is_paused: bool = False
+    paused_at: Optional[datetime] = None
     last_email_sent_at: Optional[datetime] = None
     last_email_type: Optional[str] = None
     created_at: datetime
@@ -452,3 +459,33 @@ class SendEmailResponse(BaseModel):
     results: List[SendEmailResult]
     total_sent: int
     total_failed: int
+
+
+class StreakGroupCreate(BaseModel):
+    member_emails: List[EmailStr] = Field(max_length=3)
+    resolution_id: int
+
+
+class StreakGroupMemberInfo(BaseModel):
+    user_id: int
+    full_name: str
+    email: str  # Masked in production, but showing for now
+    current_streak: int
+
+
+class StreakGroupResponse(BaseModel):
+    id: int
+    members: List[StreakGroupMemberInfo]
+    is_active: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserEmailValidate(BaseModel):
+    email: EmailStr
+
+
+class UserEmailValidateResponse(BaseModel):
+    exists: bool

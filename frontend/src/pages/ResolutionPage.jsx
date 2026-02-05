@@ -5,7 +5,7 @@ import {
     ArrowLeft, Sparkles, Target, Calendar, Clock,
     CheckCircle, Edit2, ChevronRight, Loader2, Flame,
     BookOpen, AlertTriangle, RefreshCw, Trophy, LineChart,
-    Plus, X
+    Plus, X, Shield, Link2, Pause
 } from 'lucide-react'
 import WeeklyGoalBanner from './WeeklyGoalBanner'
 import AIFeedback from '../components/AIFeedback'
@@ -220,6 +220,12 @@ export default function ResolutionPage() {
                                 {resolution.skill_level && (
                                     <span className="skill-badge">{resolution.skill_level}</span>
                                 )}
+                                {streak?.in_streak_group && (
+                                    <span className="group-badge">
+                                        <Link2 size={12} />
+                                        Linked
+                                    </span>
+                                )}
                             </div>
                             <h1>{resolution.goal_statement}</h1>
                         </div>
@@ -231,6 +237,18 @@ export default function ResolutionPage() {
                                     <span className="streak-number">{streak.current_streak}</span>
                                     <span className="streak-label">day streak</span>
                                 </div>
+                                {streak.shield_count > 0 && (
+                                    <div className="shield-tag" title={`${streak.shield_count} Dynamic Shields active`}>
+                                        <Shield size={14} />
+                                        <span>{streak.shield_count}</span>
+                                    </div>
+                                )}
+                                {streak.is_paused && (
+                                    <div className="paused-badge" title="Streak Paused">
+                                        <Pause size={14} />
+                                        <span>Paused</span>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -282,6 +300,13 @@ export default function ResolutionPage() {
                                     <div className="stat-info">
                                         <span className="stat-value">{streak?.current_streak || 0}</span>
                                         <span className="stat-label">Current Streak</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card shield">
+                                    <Shield className="stat-icon" />
+                                    <div className="stat-info">
+                                        <span className="stat-value">{streak?.shield_count || 0}</span>
+                                        <span className="stat-label">Shields Active</span>
                                     </div>
                                 </div>
                                 <div className="stat-card likelihood">

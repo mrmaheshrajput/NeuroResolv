@@ -201,6 +201,7 @@ async def generate_resolution_roadmap(
 
     resolution.roadmap_generated = True
     resolution.roadmap_needs_refresh = False
+    resolution.next_roadmap_refresh = calculate_next_refresh_date(resolution.cadence)
 
     await db.commit()
 
@@ -748,6 +749,8 @@ async def save_manual_roadmap(
 
     resolution.roadmap_generated = True
     resolution.roadmap_mode = "manual"
+    resolution.roadmap_needs_refresh = True
+    resolution.next_roadmap_refresh = calculate_next_refresh_date(resolution.cadence)
 
     await db.commit()
 
@@ -1033,19 +1036,7 @@ async def get_user_aggregated_focus(
     week_start = today - timedelta(days=today.weekday())
     week_end = week_start + timedelta(days=6)
 
-    # Check for existing focus
-    result = await db.execute(
-        select(UserWeeklyFocus).where(
-            UserWeeklyFocus.user_id == user.id,
-            UserWeeklyFocus.week_start == week_start,
-        )
-    )
-    existing_focus = result.scalar_one_or_none()
-    if existing_focus:
-        return existing_focus
-
-    # Generate new one if not found
-    # Get all active resolutions for user
+    # Get all active resolutions for user to check for staleness
     res_result = await db.execute(
         select(Resolution).where(
             Resolution.user_id == user.id, Resolution.status == "active"
@@ -1053,6 +1044,29 @@ async def get_user_aggregated_focus(
     )
     resolutions = res_result.scalars().all()
 
+    # Check for existing focus
+    result = await db.execute(
+        select(UserWeeklyFocus)
+        .where(
+            UserWeeklyFocus.user_id == user.id,
+            UserWeeklyFocus.week_start == week_start,
+        )
+        .order_by(UserWeeklyFocus.created_at.desc())
+    )
+    existing_focus = result.scalars().first()
+
+    if existing_focus:
+        # Check if the focus is stale (any active resolution updated after focus creation)
+        is_stale = False
+        if resolutions:
+            latest_res_update = max(r.updated_at for r in resolutions)
+            if latest_res_update > existing_focus.created_at:
+                is_stale = True
+
+        if not is_stale:
+            return existing_focus
+
+    # Generate new one if not found or stale
     if not resolutions:
         return {
             "id": 0,
@@ -1075,22 +1089,35 @@ async def get_user_aggregated_focus(
         for r in resolutions
     ]
 
-    focus_data = await get_aggregated_weekly_focus(res_dicts)
-
-    new_focus = UserWeeklyFocus(
-        user_id=user.id,
-        focus_text=focus_data.get("focus_text", ""),
-        micro_actions=focus_data.get("micro_actions", []),
-        motivation_note=focus_data.get("motivation_note"),
-        week_start=week_start,
-        week_end=week_end,
+    focus_data = await get_aggregated_weekly_focus(
+        res_dicts, metadata={"customer_id": user.id}
     )
 
-    db.add(new_focus)
-    await db.commit()
-    await db.refresh(new_focus)
+    if existing_focus:
+        # Update existing record instead of creating a new one
+        existing_focus.focus_text = focus_data.get("focus_text", "")
+        existing_focus.micro_actions = focus_data.get("micro_actions", [])
+        existing_focus.motivation_note = focus_data.get("motivation_note")
+        existing_focus.created_at = (
+            datetime.utcnow()
+        )  # Reset creation time to mark as fresh
+        await db.commit()
+        await db.refresh(existing_focus)
+        return existing_focus
+    else:
+        new_focus = UserWeeklyFocus(
+            user_id=user.id,
+            focus_text=focus_data.get("focus_text", ""),
+            micro_actions=focus_data.get("micro_actions", []),
+            motivation_note=focus_data.get("motivation_note"),
+            week_start=week_start,
+            week_end=week_end,
+        )
 
-    return new_focus
+        db.add(new_focus)
+        await db.commit()
+        await db.refresh(new_focus)
+        return new_focus
 
 
 @router.put("/weekly-focused/{focus_id}/dismiss")

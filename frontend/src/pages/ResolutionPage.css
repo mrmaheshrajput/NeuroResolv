@@ -623,3 +623,38 @@
     background: rgba(239, 68, 68, 0.2);
     color: #ef4444;
 }
+
+.streak-mode-notice {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid var(--primary-500);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    margin-bottom: var(--space-8);
+}
+
+.streak-mode-notice svg {
+    color: var(--primary-400);
+    flex-shrink: 0;
+}
+
+.notice-content h3 {
+    font-size: 1.125rem;
+    margin-bottom: var(--space-1);
+    color: var(--primary-300);
+}
+
+.notice-content p {
+    color: var(--gray-400);
+    font-size: 0.9375rem;
+}
+
+.manual-card {
+    border-color: var(--gray-600);
+}
+
+.manual-card .generate-icon {
+    background: linear-gradient(135deg, var(--gray-700), var(--gray-800));
+}

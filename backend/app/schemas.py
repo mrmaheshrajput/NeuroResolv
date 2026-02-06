@@ -85,11 +85,18 @@ class NegotiationResponse(BaseModel):
     streak_trigger: str
 
 
+class RoadmapMode(str, Enum):
+    AI_GENERATED = "ai_generated"
+    MANUAL = "manual"
+    STREAK_ONLY = "streak_only"
+
+
 class ResolutionCreate(BaseModel):
     goal_statement: str = Field(min_length=10, max_length=1000)
     category: GoalCategory = GoalCategory.LEARNING
     skill_level: Optional[SkillLevel] = None
     cadence: Cadence = Cadence.DAILY
+    roadmap_mode: RoadmapMode = RoadmapMode.AI_GENERATED
 
 
 class ResolutionResponse(BaseModel):
@@ -103,6 +110,7 @@ class ResolutionResponse(BaseModel):
     current_milestone: int
     roadmap_generated: bool
     roadmap_needs_refresh: bool
+    roadmap_mode: str
     created_at: datetime
     updated_at: datetime
 
@@ -261,12 +269,6 @@ class VoiceNoteUpload(BaseModel):
 class TranscriptionResponse(BaseModel):
     text: str
     duration_seconds: Optional[int]
-
-
-class RoadmapMode(str, Enum):
-    AI_GENERATED = "ai_generated"
-    MANUAL = "manual"
-    STREAK_ONLY = "streak_only"
 
 
 class WeeklyGoalResponse(BaseModel):

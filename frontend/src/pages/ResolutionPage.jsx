@@ -5,7 +5,7 @@ import {
     ArrowLeft, Sparkles, Target, Calendar, Clock,
     CheckCircle, Edit2, ChevronRight, Loader2, Flame,
     BookOpen, AlertTriangle, RefreshCw, Trophy, LineChart,
-    Plus, X, Shield, Link2, Pause
+    Plus, X, Shield, Link2, Pause, Brain
 } from 'lucide-react'
 import WeeklyGoalBanner from './WeeklyGoalBanner'
 import AIFeedback from '../components/AIFeedback'
@@ -54,7 +54,7 @@ export default function ResolutionPage() {
             const resData = await api.getResolution(id)
             setResolution(resData)
 
-            if (resData.roadmap_generated) {
+            if (resData.roadmap_generated || resData.roadmap_mode === 'streak_only') {
                 const [roadmapData, streakData, todayData, northStarData, livingData] = await Promise.all([
                     api.getRoadmap(id).catch(() => null),
                     api.getStreak(id).catch(() => null),
@@ -253,48 +253,82 @@ export default function ResolutionPage() {
                         )}
                     </div>
 
-                    {!resolution.roadmap_generated ? (
+                    {resolution.roadmap_mode !== 'streak_only' && !resolution.roadmap_generated && (
                         <div className="generate-section">
-                            <div className="generate-card">
-                                <div className="generate-icon">
-                                    <Sparkles size={48} />
+                            {resolution.roadmap_mode === 'manual' ? (
+                                <div className="generate-card manual-card">
+                                    <div className="generate-icon">
+                                        <Edit2 size={48} />
+                                    </div>
+                                    <h2>Build Your Roadmap</h2>
+                                    <p>
+                                        You've chosen to build your own plan. Start by adding
+                                        your first few milestones to track your progress.
+                                    </p>
+                                    <button
+                                        onClick={startEditing}
+                                        className="btn btn-primary btn-lg"
+                                    >
+                                        <Plus size={20} />
+                                        Create Manual Roadmap
+                                    </button>
                                 </div>
-                                <h2>Generate Your Learning Roadmap</h2>
-                                <p>
-                                    Our AI will create a personalized milestone-based roadmap
-                                    tailored to your goal and learning style.
-                                </p>
-                                <button
-                                    onClick={handleGenerateRoadmap}
-                                    className="btn btn-primary btn-lg"
-                                    disabled={generating}
-                                >
-                                    {generating ? (
-                                        <>
-                                            <Loader2 className="animate-spin" size={20} />
-                                            Generating Roadmap...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Sparkles size={20} />
-                                            Generate AI Roadmap
-                                        </>
-                                    )}
-                                </button>
+                            ) : (
+                                <div className="generate-card">
+                                    <div className="generate-icon">
+                                        <Sparkles size={48} />
+                                    </div>
+                                    <h2>Generate Your Learning Roadmap</h2>
+                                    <p>
+                                        Our AI will create a personalized milestone-based roadmap
+                                        tailored to your goal and learning style.
+                                    </p>
+                                    <button
+                                        onClick={handleGenerateRoadmap}
+                                        className="btn btn-primary btn-lg"
+                                        disabled={generating}
+                                    >
+                                        {generating ? (
+                                            <>
+                                                <Loader2 className="animate-spin" size={20} />
+                                                Generating Roadmap...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Sparkles size={20} />
+                                                Generate AI Roadmap
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {resolution.roadmap_mode === 'streak_only' && (
+                        <div className="streak-mode-notice">
+                            <Brain size={24} />
+                            <div className="notice-content">
+                                <h3>Habit Tracking Mode</h3>
+                                <p>You're focusing on consistency. Keep your streak alive by logging progress every {resolution.cadence === 'daily' ? 'day' : 'scheduled day'}.</p>
                             </div>
                         </div>
-                    ) : (
+                    )}
+
+                    {(resolution.roadmap_mode === 'streak_only' || resolution.roadmap_generated) && (
                         <>
                             <WeeklyGoalBanner resolutions={[resolution]} singleResolutionId={resolution.id} />
 
                             <div className="stats-row">
-                                <div className="stat-card">
-                                    <Target className="stat-icon" />
-                                    <div className="stat-info">
-                                        <span className="stat-value">{completedMilestones}/{totalMilestones}</span>
-                                        <span className="stat-label">Milestones</span>
+                                {resolution.roadmap_mode !== 'streak_only' && (
+                                    <div className="stat-card">
+                                        <Target className="stat-icon" />
+                                        <div className="stat-info">
+                                            <span className="stat-value">{completedMilestones}/{totalMilestones}</span>
+                                            <span className="stat-label">Milestones</span>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                                 <div className="stat-card">
                                     <Flame className="stat-icon" />
                                     <div className="stat-info">
@@ -309,17 +343,42 @@ export default function ResolutionPage() {
                                         <span className="stat-label">Shields Active</span>
                                     </div>
                                 </div>
-                                <div className="stat-card likelihood">
-                                    <LineChart className="stat-icon" />
-                                    <div className="stat-info">
+                                {resolution.roadmap_mode !== 'streak_only' && (
+                                    <div className="stat-card likelihood">
+                                        <span className="stat-label">
+                                            <LineChart className="stat-icon" />
+                                            Success Likelihood
+                                        </span>
                                         <span className="stat-value">
                                             {livingRoadmapData?.likelihood_score
                                                 ? `${Math.round(livingRoadmapData.likelihood_score * 100)}%`
                                                 : '--'}
                                         </span>
-                                        <span className="stat-label">Success Likelihood</span>
                                     </div>
-                                </div>
+                                )}
+                            </div>
+
+                            <div className="daily-action-section">
+                                {todayProgress ? (
+                                    <div className="today-logged-card">
+                                        <CheckCircle size={24} className="logged-icon" />
+                                        <div className="logged-content">
+                                            <h3>Today's Progress Logged</h3>
+                                            <p>{todayProgress.content.slice(0, 100)}...</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <Link to={`/checkin/${id}`} className="daily-checkin-btn">
+                                        <div className="checkin-content">
+                                            <BookOpen size={28} />
+                                            <div className="checkin-text">
+                                                <h3>Log Today's Progress</h3>
+                                                <p>What did you work on today?</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight size={24} />
+                                    </Link>
+                                )}
                             </div>
 
                             {northStar && (
@@ -373,30 +432,11 @@ export default function ResolutionPage() {
                                     )}
                                 </div>
                             )}
+                        </>
+                    )}
 
-                            <div className="daily-action-section">
-                                {todayProgress ? (
-                                    <div className="today-logged-card">
-                                        <CheckCircle size={24} className="logged-icon" />
-                                        <div className="logged-content">
-                                            <h3>Today's Progress Logged</h3>
-                                            <p>{todayProgress.content.slice(0, 100)}...</p>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <Link to={`/checkin/${id}`} className="daily-checkin-btn">
-                                        <div className="checkin-content">
-                                            <BookOpen size={28} />
-                                            <div className="checkin-text">
-                                                <h3>Log Today's Progress</h3>
-                                                <p>What did you work on today?</p>
-                                            </div>
-                                        </div>
-                                        <ChevronRight size={24} />
-                                    </Link>
-                                )}
-                            </div>
-
+                    {resolution.roadmap_mode !== 'streak_only' && (resolution.roadmap_generated || isEditingRoadmap) && (
+                        <>
                             {roadmap?.needs_refresh && (
                                 <div className="refresh-notice">
                                     <AlertTriangle size={20} />

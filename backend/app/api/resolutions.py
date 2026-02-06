@@ -63,6 +63,7 @@ async def create_resolution(
         category=data.category.value,
         skill_level=data.skill_level.value if data.skill_level else None,
         cadence=data.cadence.value,
+        roadmap_mode=data.roadmap_mode.value,
     )
 
     db.add(resolution)

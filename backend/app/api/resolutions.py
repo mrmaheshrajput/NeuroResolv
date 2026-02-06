@@ -574,29 +574,10 @@ async def update_north_star(
     return north_star
 
 
-@router.post("/{resolution_id}/roadmap/refresh", response_model=LivingRoadmapResponse)
-async def refresh_living_roadmap(
-    resolution_id: int,
-    user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Trigger a living roadmap refresh based on recent progress."""
-    result = await db.execute(
-        select(Resolution)
-        .options(
-            selectinload(Resolution.milestones),
-            selectinload(Resolution.progress_logs),
-            selectinload(Resolution.streak),
-        )
-        .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
-    )
-    resolution = result.scalar_one_or_none()
-
-    if not resolution:
-        raise HTTPException(status_code=404, detail="Resolution not found")
-
+async def _perform_roadmap_refresh(db: AsyncSession, resolution: Resolution) -> dict:
+    """Internal helper to perform the roadmap refresh logic."""
     if not resolution.milestones:
-        raise HTTPException(status_code=400, detail="No roadmap to refresh")
+        return None
 
     milestones_data = [
         {
@@ -626,17 +607,15 @@ async def refresh_living_roadmap(
         current_milestones=milestones_data,
         progress_logs=progress_data,
         streak_data=streak_data,
-        metadata={"customer_id": user.id},
+        metadata={"customer_id": resolution.user_id},
     )
 
-    # TODO: Is this still used?
     likelihood_score = calculate_goal_likelihood_score(
         streak_data=streak_data,
         milestones=milestones_data,
         progress_logs=progress_data,
     )
 
-    # TODO: Is this still used?
     next_refresh = calculate_next_refresh_date(resolution.cadence)
 
     resolution.goal_likelihood_score = likelihood_score
@@ -647,14 +626,42 @@ async def refresh_living_roadmap(
 
     sorted_milestones = sorted(resolution.milestones, key=lambda m: m.order)
 
-    return LivingRoadmapResponse(
-        resolution_id=resolution.id,
-        milestones=[MilestoneResponse.model_validate(m) for m in sorted_milestones],
-        needs_refresh=False,
-        likelihood_score=likelihood_score,
-        next_refresh=next_refresh,
-        overall_assessment=update_data.get("overall_assessment"),
+    return {
+        "resolution_id": resolution.id,
+        "milestones": [MilestoneResponse.model_validate(m) for m in sorted_milestones],
+        "needs_refresh": False,
+        "likelihood_score": likelihood_score,
+        "next_refresh": next_refresh,
+        "overall_assessment": update_data.get("overall_assessment"),
+    }
+
+
+@router.post("/{resolution_id}/roadmap/refresh", response_model=LivingRoadmapResponse)
+async def refresh_living_roadmap(
+    resolution_id: int,
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Trigger a living roadmap refresh based on recent progress."""
+    result = await db.execute(
+        select(Resolution)
+        .options(
+            selectinload(Resolution.milestones),
+            selectinload(Resolution.progress_logs),
+            selectinload(Resolution.streak),
+        )
+        .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
     )
+    resolution = result.scalar_one_or_none()
+
+    if not resolution:
+        raise HTTPException(status_code=404, detail="Resolution not found")
+
+    if not resolution.milestones:
+        raise HTTPException(status_code=400, detail="No roadmap to refresh")
+
+    refresh_result = await _perform_roadmap_refresh(db, resolution)
+    return LivingRoadmapResponse(**refresh_result)
 
 
 @router.get("/{resolution_id}/roadmap/living", response_model=LivingRoadmapResponse)
@@ -686,6 +693,51 @@ async def get_living_roadmap(
         likelihood_score=resolution.goal_likelihood_score,
         next_refresh=resolution.next_roadmap_refresh,
     )
+
+
+@router.post("/system/auto-refresh")
+async def system_auto_refresh(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Automated job to refresh roadmaps that are due.
+    Triggered by Lambda/EventBridge.
+    """
+    now = datetime.utcnow()
+    # Find active resolutions where next_roadmap_refresh has passed
+    result = await db.execute(
+        select(Resolution)
+        .options(
+            selectinload(Resolution.milestones),
+            selectinload(Resolution.progress_logs),
+            selectinload(Resolution.streak),
+        )
+        .where(
+            and_(
+                Resolution.status == "active",
+                Resolution.next_roadmap_refresh <= now,
+                Resolution.roadmap_generated == True,
+            )
+        )
+    )
+    due_resolutions = result.scalars().all()
+
+    refreshed_count = 0
+    errors = []
+
+    for res in due_resolutions:
+        try:
+            await _perform_roadmap_refresh(db, res)
+            refreshed_count += 1
+        except Exception as e:
+            errors.append({"resolution_id": res.id, "error": str(e)})
+
+    return {
+        "status": "success",
+        "refreshed_count": refreshed_count,
+        "failed_count": len(errors),
+        "errors": errors,
+    }
 
 
 @router.put("/{resolution_id}/roadmap-mode")

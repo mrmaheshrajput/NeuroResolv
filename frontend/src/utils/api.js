@@ -50,6 +50,10 @@ class ApiClient {
             throw new Error(message)
         }
 
+        if (response.status === 204 || response.status === 205) {
+            return null
+        }
+
         return response.json()
     }
 

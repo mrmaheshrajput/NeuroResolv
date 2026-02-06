@@ -101,6 +101,9 @@ export default function EmailPreferencesCard() {
                 setTimezone(data.timezone || timezone)
                 setPreferredHour(data.preferred_hour)
                 if (!data.email_opt_in) setIsCollapsed(false)
+            } else {
+                setPreferences(null)
+                setIsEnabled(false)
             }
         } catch (error) {
             console.error('Failed to load email preferences:', error)

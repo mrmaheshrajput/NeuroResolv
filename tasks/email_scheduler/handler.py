@@ -38,29 +38,28 @@ def make_api_request(
     headers = {
         "Content-Type": "application/json",
         "X-API-Key": api_key,
+        "User-Agent": "aws-lambda",
     }
 
-    if data:
+    body = None
+    if method.upper() in {"POST", "PUT", "PATCH"} and data is not None:
         body = json.dumps(data).encode("utf-8")
-    else:
-        body = None
+        headers["Content-Type"] = "application/json"
 
     request = urllib.request.Request(
         url,
         data=body,
         headers=headers,
-        method=method,
+        method=method.upper(),
     )
 
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
-        error_body = e.read().decode("utf-8") if e.fp else ""
-        print(f"HTTP Error {e.code}: {error_body}")
-        raise
-    except urllib.error.URLError as e:
-        print(f"URL Error: {e.reason}")
+        error_body = e.read().decode("utf-8")
+        print("Status:", e.code)
+        print("Response body:", error_body)
         raise
 
 
@@ -83,7 +82,7 @@ def send_emails(user_ids: list) -> dict:
     return response
 
 
-def handler(event: dict, context) -> dict:
+def lambda_handler(event: dict, context) -> dict:
     """
     Lambda handler function.
 
@@ -155,10 +154,3 @@ def handler(event: dict, context) -> dict:
                 }
             ),
         }
-
-
-# For local testing
-if __name__ == "__main__":
-    # Simulate Lambda invocation
-    result = handler({}, None)
-    print(json.dumps(json.loads(result["body"]), indent=2))

@@ -26,7 +26,7 @@ Return JSON:
 }"""
 
 
-@track_llm_call("analyze_checkin")
+@track_llm_call(name="analyze_checkin", tags=["analyze_checkin", "llm_call"])
 async def analyze_checkin(
     input_type: str,
     content: str | bytes,

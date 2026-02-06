@@ -39,7 +39,7 @@ Return a JSON object with this structure:
 }"""
 
 
-@track_llm_call("roadmap_generation")
+@track_llm_call(name="generate_roadmap", tags=["roadmap_agent", "llm_call"])
 async def generate_roadmap(
     goal_statement: str,
     category: str,
@@ -86,6 +86,7 @@ Each milestone should have clear, demonstrable verification criteria."""
         return _generate_fallback_roadmap(goal_statement, category, cadence)
 
 
+@track_llm_call(name="generate_fallback_roadmap", tags=["roadmap_agent", "llm_call"])
 def _generate_fallback_roadmap(goal: str, category: str, cadence: str) -> dict:
     weeks_per_milestone = (
         2 if cadence == "daily" else 3 if cadence in ["3x_week", "weekdays"] else 4
@@ -127,7 +128,8 @@ def _generate_fallback_roadmap(goal: str, category: str, cadence: str) -> dict:
     }
 
 
-@track_llm_call("milestone_refinement")
+# TODO: This is not used
+@track_llm_call(name="refine_milestone", tags=["roadmap_agent", "llm_call"])
 async def refine_milestone(
     milestone_title: str,
     user_edit: dict,
@@ -182,7 +184,9 @@ Return a JSON object with:
 }"""
 
 
-@track_llm_call("living_roadmap_refresh")
+@track_llm_call(
+    name="generate_living_roadmap_update", tags=["roadmap_agent", "llm_call"]
+)
 async def generate_living_roadmap_update(
     goal_statement: str,
     category: str,
@@ -345,7 +349,9 @@ def calculate_next_refresh_date(
     return next_refresh
 
 
-@track_llm_call("roadmap_regeneration")
+@track_llm_call(
+    name="regenerate_roadmap_with_feedback", tags=["roadmap_agent", "llm_call"]
+)
 async def regenerate_roadmap_with_feedback(
     goal_statement: str,
     category: str,
@@ -353,6 +359,7 @@ async def regenerate_roadmap_with_feedback(
     cadence: str,
     original_roadmap: dict,
     feedback_text: str,
+    metadata: dict,
 ) -> dict:
     """Regenerate roadmap using gemini-2.5-pro after negative feedback.
 

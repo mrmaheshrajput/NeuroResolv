@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { api } from '../utils/api'
 import WeeklyGoalBanner from './WeeklyGoalBanner'
 import EmailPreferencesCard from '../components/EmailPreferencesCard'
+import StreakGroupCard from '../components/StreakGroupCard'
+import StreakPauseCard from '../components/StreakPauseCard'
 import {
     Brain, LogOut, Plus, Target, Flame, BookOpen,
     ChevronRight, Loader2, X, Dumbbell, Briefcase,
@@ -120,7 +122,13 @@ export default function DashboardPage() {
                     ) : (
                         <>
                             <WeeklyGoalBanner resolutions={resolutions} />
-                            <EmailPreferencesCard />
+
+                            <div className="dashboard-settings-row">
+                                <EmailPreferencesCard />
+                                <StreakGroupCard resolutions={resolutions} />
+                                <StreakPauseCard />
+                            </div>
+
                             <div className="resolutions-grid">
                                 {resolutions.map((resolution) => (
                                     <ResolutionCard

@@ -50,6 +50,10 @@ class ApiClient {
             throw new Error(message)
         }
 
+        if (response.status === 204 || response.status === 205) {
+            return null
+        }
+
         return response.json()
     }
 
@@ -287,6 +291,44 @@ class ApiClient {
     async deleteEmailPreferences() {
         return this.request('/email/preferences', {
             method: 'DELETE',
+        })
+    }
+
+    // Streak Groups
+    async validateStreakEmail(email) {
+        return this.request('/streak-groups/validate-email', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
+        })
+    }
+
+    async createStreakGroup(data) {
+        return this.request('/streak-groups', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        })
+    }
+
+    async getMyStreakGroup() {
+        return this.request('/streak-groups/my-group')
+    }
+
+    async leaveStreakGroup(groupId) {
+        return this.request(`/streak-groups/${groupId}`, {
+            method: 'DELETE',
+        })
+    }
+
+    // Pause/Resume
+    async pauseStreak() {
+        return this.request('/email/preferences/pause', {
+            method: 'POST',
+        })
+    }
+
+    async resumeStreak() {
+        return this.request('/email/preferences/resume', {
+            method: 'POST',
         })
     }
 }

@@ -41,7 +41,9 @@ Return JSON:
 }"""
 
 
-@track_llm_call("context_aware_quiz")
+@track_llm_call(
+    name="generate_verification_quiz", tags=["verification_agent", "llm_call"]
+)
 async def generate_verification_quiz(
     progress_content: str,
     source_reference: str | None,
@@ -175,7 +177,7 @@ Return JSON:
 }"""
 
 
-@track_llm_call("quiz_grading")
+@track_llm_call(name="grade_verification_quiz", tags=["verification_agent", "llm_call"])
 async def grade_verification_quiz(
     questions: list[dict],
     answers: list[dict],

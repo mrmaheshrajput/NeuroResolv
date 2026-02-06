@@ -164,7 +164,9 @@ The goal should be completable within this week and feel motivating."""
         return _generate_fallback_weekly_goal(resolution_goal, cadence)
 
 
-@track_llm_call("weekly_goal_regeneration")
+@track_llm_call(
+    name="regenerate_weekly_goal_with_feedback", tags=["weekly_goal_agent", "llm_call"]
+)
 async def regenerate_weekly_goal_with_feedback(
     resolution_goal: str,
     category: str,
@@ -210,6 +212,9 @@ Address the user's concerns and generate an improved goal."""
         return _generate_fallback_weekly_goal(resolution_goal, cadence)
 
 
+@track_llm_call(
+    name="generate_fallback_weekly_goal", tags=["weekly_goal_agent", "llm_call"]
+)
 def _generate_fallback_weekly_goal(goal: str, cadence: str) -> dict:
     """Fallback goal if AI generation fails."""
     if cadence == "daily":
@@ -238,7 +243,9 @@ def _generate_fallback_weekly_goal(goal: str, cadence: str) -> dict:
     }
 
 
-@track_llm_call("aggregated_weekly_focus")
+@track_llm_call(
+    name="get_aggregated_weekly_focus", tags=["weekly_goal_agent", "llm_call"]
+)
 async def get_aggregated_weekly_focus(
     resolutions: list[dict],
     metadata: dict = None,

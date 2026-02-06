@@ -163,6 +163,8 @@ class Streak(Base):
     current_streak: Mapped[int] = mapped_column(Integer, default=0)
     longest_streak: Mapped[int] = mapped_column(Integer, default=0)
     total_verified_days: Mapped[int] = mapped_column(Integer, default=0)
+    shield_count: Mapped[int] = mapped_column(Integer, default=0)
+    consecutive_checkins: Mapped[int] = mapped_column(Integer, default=0)
 
     last_log_date: Mapped[Optional[datetime]] = mapped_column(Date, nullable=True)
     last_verified_date: Mapped[Optional[datetime]] = mapped_column(Date, nullable=True)
@@ -294,6 +296,8 @@ class UserEmailPreference(Base):
     email_opt_in: Mapped[bool] = mapped_column(Boolean, default=False)
     timezone: Mapped[str] = mapped_column(String(100), default="UTC")
     preferred_hour: Mapped[int] = mapped_column(Integer, default=9)  # 0-23, local time
+    is_paused: Mapped[bool] = mapped_column(Boolean, default=False)
+    paused_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Track last email sent to prevent duplicates
     last_email_sent_at: Mapped[Optional[datetime]] = mapped_column(
@@ -305,5 +309,52 @@ class UserEmailPreference(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
+
+    user: Mapped["User"] = relationship()
+
+
+class StreakGroup(Base):
+    __tablename__ = "streak_groups"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    members: Mapped[list["StreakGroupMember"]] = relationship(
+        back_populates="group", cascade="all, delete-orphan"
+    )
+
+
+class StreakGroupMember(Base):
+    __tablename__ = "streak_group_members"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("streak_groups.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    resolution_id: Mapped[int] = mapped_column(ForeignKey("resolutions.id"), index=True)
+    joined_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    group: Mapped["StreakGroup"] = relationship(back_populates="members")
+    user: Mapped["User"] = relationship()
+    resolution: Mapped["Resolution"] = relationship()
+
+
+class EmailQueue(Base):
+    __tablename__ = "email_queue"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    email_type: Mapped[str] = mapped_column(String(50))
+    subject: Mapped[str] = mapped_column(String(500))
+    html_content: Mapped[str] = mapped_column(Text)
+    text_content: Mapped[str] = mapped_column(Text)
+    scheduled_for: Mapped[datetime] = mapped_column(DateTime)
+    status: Mapped[str] = mapped_column(
+        String(20), default="pending"
+    )  # pending, sent, failed
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     user: Mapped["User"] = relationship()

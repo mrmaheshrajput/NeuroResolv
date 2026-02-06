@@ -1,37 +1,47 @@
 import { useState, useEffect } from 'react'
 import { api } from '../utils/api'
-import { Mail, Globe, Clock, Loader2, Check, X, Bell, BellOff } from 'lucide-react'
+import { Mail, Globe, Clock, Loader2, Check, X, Bell, BellOff, Edit2 } from 'lucide-react'
 import './EmailPreferencesCard.css'
 
 // Common timezones grouped by region
 const TIMEZONE_OPTIONS = [
-    { group: 'Americas', zones: [
-        { value: 'America/New_York', label: 'New York (EST/EDT)' },
-        { value: 'America/Chicago', label: 'Chicago (CST/CDT)' },
-        { value: 'America/Denver', label: 'Denver (MST/MDT)' },
-        { value: 'America/Los_Angeles', label: 'Los Angeles (PST/PDT)' },
-        { value: 'America/Sao_Paulo', label: 'São Paulo (BRT)' },
-    ]},
-    { group: 'Europe', zones: [
-        { value: 'Europe/London', label: 'London (GMT/BST)' },
-        { value: 'Europe/Paris', label: 'Paris (CET/CEST)' },
-        { value: 'Europe/Berlin', label: 'Berlin (CET/CEST)' },
-        { value: 'Europe/Moscow', label: 'Moscow (MSK)' },
-    ]},
-    { group: 'Asia', zones: [
-        { value: 'Asia/Dubai', label: 'Dubai (GST)' },
-        { value: 'Asia/Kolkata', label: 'India (IST)' },
-        { value: 'Asia/Singapore', label: 'Singapore (SGT)' },
-        { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
-        { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
-    ]},
-    { group: 'Pacific', zones: [
-        { value: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)' },
-        { value: 'Pacific/Auckland', label: 'Auckland (NZST/NZDT)' },
-    ]},
-    { group: 'Other', zones: [
-        { value: 'UTC', label: 'UTC' },
-    ]},
+    {
+        group: 'Americas', zones: [
+            { value: 'America/New_York', label: 'New York (EST/EDT)' },
+            { value: 'America/Chicago', label: 'Chicago (CST/CDT)' },
+            { value: 'America/Denver', label: 'Denver (MST/MDT)' },
+            { value: 'America/Los_Angeles', label: 'Los Angeles (PST/PDT)' },
+            { value: 'America/Sao_Paulo', label: 'São Paulo (BRT)' },
+        ]
+    },
+    {
+        group: 'Europe', zones: [
+            { value: 'Europe/London', label: 'London (GMT/BST)' },
+            { value: 'Europe/Paris', label: 'Paris (CET/CEST)' },
+            { value: 'Europe/Berlin', label: 'Berlin (CET/CEST)' },
+            { value: 'Europe/Moscow', label: 'Moscow (MSK)' },
+        ]
+    },
+    {
+        group: 'Asia', zones: [
+            { value: 'Asia/Dubai', label: 'Dubai (GST)' },
+            { value: 'Asia/Kolkata', label: 'India (IST)' },
+            { value: 'Asia/Singapore', label: 'Singapore (SGT)' },
+            { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+            { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
+        ]
+    },
+    {
+        group: 'Pacific', zones: [
+            { value: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)' },
+            { value: 'Pacific/Auckland', label: 'Auckland (NZST/NZDT)' },
+        ]
+    },
+    {
+        group: 'Other', zones: [
+            { value: 'UTC', label: 'UTC' },
+        ]
+    },
 ]
 
 // Hour options in 12-hour format
@@ -71,6 +81,7 @@ export default function EmailPreferencesCard() {
     const [preferredHour, setPreferredHour] = useState(9)
     const [hasChanges, setHasChanges] = useState(false)
     const [showSuccess, setShowSuccess] = useState(false)
+    const [isCollapsed, setIsCollapsed] = useState(true)
 
     useEffect(() => {
         loadPreferences()
@@ -89,6 +100,10 @@ export default function EmailPreferencesCard() {
                 setIsEnabled(data.email_opt_in)
                 setTimezone(data.timezone || timezone)
                 setPreferredHour(data.preferred_hour)
+                if (!data.email_opt_in) setIsCollapsed(false)
+            } else {
+                setPreferences(null)
+                setIsEnabled(false)
             }
         } catch (error) {
             console.error('Failed to load email preferences:', error)
@@ -124,10 +139,16 @@ export default function EmailPreferencesCard() {
             } else {
                 await api.deleteEmailPreferences()
             }
+            // Reset state
             setHasChanges(false)
             setShowSuccess(true)
             setTimeout(() => setShowSuccess(false), 3000)
+
+            // Re-fetch to ensure we have the latest server state
             await loadPreferences()
+
+            // Collapse automatically after save
+            setIsCollapsed(true)
         } catch (error) {
             console.error('Failed to save preferences:', error)
         } finally {
@@ -155,121 +176,136 @@ export default function EmailPreferencesCard() {
     }
 
     return (
-        <div className="email-prefs-card">
+        <div
+            className={`email-prefs-card ${isCollapsed ? 'collapsed' : ''}`}
+            onClick={() => setIsCollapsed(!isCollapsed)}
+        >
             <div className="email-prefs-header">
                 <div className="email-prefs-icon">
                     <Mail size={20} />
                 </div>
                 <div className="email-prefs-title">
                     <h3>Email Reflections</h3>
-                    <p>Personalized insights about your learning journey</p>
-                </div>
-            </div>
-
-            <div className="email-prefs-toggle">
-                <div className="toggle-info">
-                    {isEnabled ? (
-                        <>
-                            <Bell size={18} className="toggle-icon enabled" />
-                            <span>Emails enabled</span>
-                        </>
+                    {!isCollapsed ? (
+                        <p>Personalized insights about your learning journey</p>
+                    ) : isEnabled && preferences ? (
+                        <div className="collapsed-info">
+                            <span><Clock size={12} /> {HOUR_OPTIONS.find(h => h.value === preferences.preferred_hour)?.label}</span>
+                            <span className="separator">•</span>
+                            <span>{preferences.timezone.split('/')[1] || preferences.timezone}</span>
+                        </div>
                     ) : (
-                        <>
-                            <BellOff size={18} className="toggle-icon disabled" />
-                            <span>Emails disabled</span>
-                        </>
+                        <p>Off</p>
                     )}
                 </div>
-                <button
-                    className={`toggle-switch ${isEnabled ? 'active' : ''}`}
-                    onClick={handleToggle}
-                    aria-label="Toggle email notifications"
-                >
-                    <span className="toggle-knob" />
-                </button>
+                {isCollapsed && (
+                    <div className={`tile-status ${isEnabled ? 'enabled' : ''}`}>
+                        <span>{isEnabled ? 'On' : 'Off'}</span>
+                    </div>
+                )}
             </div>
 
-            {isEnabled && (
-                <div className="email-prefs-settings">
-                    <div className="setting-row">
-                        <div className="setting-label">
-                            <Globe size={16} />
-                            <span>Timezone</span>
+            {!isCollapsed && (
+                <div className="card-content" onClick={e => e.stopPropagation()}>
+                    <div className="email-prefs-toggle">
+                        <div className="toggle-info">
+                            {isEnabled ? (
+                                <>
+                                    <Bell size={18} className="toggle-icon enabled" />
+                                    <span>Emails enabled</span>
+                                </>
+                            ) : (
+                                <>
+                                    <BellOff size={18} className="toggle-icon disabled" />
+                                    <span>Emails disabled</span>
+                                </>
+                            )}
                         </div>
-                        <select
-                            className="setting-select"
-                            value={timezone}
-                            onChange={handleTimezoneChange}
+                        <button
+                            className={`toggle-switch ${isEnabled ? 'active' : ''}`}
+                            onClick={handleToggle}
+                            aria-label="Toggle email notifications"
                         >
-                            {TIMEZONE_OPTIONS.map(group => (
-                                <optgroup key={group.group} label={group.group}>
-                                    {group.zones.map(tz => (
-                                        <option key={tz.value} value={tz.value}>
-                                            {tz.label}
+                            <span className="toggle-knob" />
+                        </button>
+                    </div>
+
+                    {isEnabled && !isCollapsed && (
+                        <div className="email-prefs-settings">
+                            <div className="setting-row">
+                                <div className="setting-label">
+                                    <Globe size={16} />
+                                    <span>Timezone</span>
+                                </div>
+                                <select
+                                    className="setting-select"
+                                    value={timezone}
+                                    onChange={handleTimezoneChange}
+                                >
+                                    {TIMEZONE_OPTIONS.map(group => (
+                                        <optgroup key={group.group} label={group.group}>
+                                            {group.zones.map(tz => (
+                                                <option key={tz.value} value={tz.value}>
+                                                    {tz.label}
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="setting-row">
+                                <div className="setting-label">
+                                    <Clock size={16} />
+                                    <span>Preferred time</span>
+                                </div>
+                                <select
+                                    className="setting-select"
+                                    value={preferredHour}
+                                    onChange={handleHourChange}
+                                >
+                                    {HOUR_OPTIONS.map(hour => (
+                                        <option key={hour.value} value={hour.value}>
+                                            {hour.label}
                                         </option>
                                     ))}
-                                </optgroup>
-                            ))}
-                        </select>
-                    </div>
+                                </select>
+                            </div>
 
-                    <div className="setting-row">
-                        <div className="setting-label">
-                            <Clock size={16} />
-                            <span>Preferred time</span>
+                            <p className="email-prefs-hint">
+                                You'll receive thoughtful emails about your streaks, milestones, and learning progress.
+                            </p>
                         </div>
-                        <select
-                            className="setting-select"
-                            value={preferredHour}
-                            onChange={handleHourChange}
-                        >
-                            {HOUR_OPTIONS.map(hour => (
-                                <option key={hour.value} value={hour.value}>
-                                    {hour.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    )}
 
-                    <p className="email-prefs-hint">
-                        You'll receive thoughtful emails about your streaks, milestones, and learning progress.
-                    </p>
-                </div>
-            )}
-
-            {hasChanges && (
-                <div className="email-prefs-actions">
-                    <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={handleCancel}
-                        disabled={saving}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        className="btn btn-primary btn-sm"
-                        onClick={handleSave}
-                        disabled={saving}
-                    >
-                        {saving ? (
-                            <>
-                                <Loader2 className="animate-spin" size={16} />
-                                Saving...
-                            </>
-                        ) : (
-                            <>
-                                <Check size={16} />
-                                Save
-                            </>
-                        )}
-                    </button>
-                </div>
-            )}
-
-            {showSuccess && (
-                <div className="email-prefs-success">
-                    <Check size={16} />
-                    <span>Preferences saved!</span>
+                    {hasChanges && (
+                        <div className="email-prefs-actions">
+                            <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={handleCancel}
+                                disabled={saving}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="btn btn-primary btn-sm"
+                                onClick={handleSave}
+                                disabled={saving}
+                            >
+                                {saving ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={16} />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check size={16} />
+                                        Save
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

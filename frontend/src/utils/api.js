@@ -115,6 +115,12 @@ class ApiClient {
         return this.request(`/resolutions/${resolutionId}/roadmap`)
     }
 
+    async refreshRoadmap(resolutionId) {
+        return this.request(`/resolutions/${resolutionId}/roadmap/refresh`, {
+            method: 'POST',
+        })
+    }
+
     async updateMilestone(milestoneId, data) {
         return this.request(`/resolutions/milestones/${milestoneId}`, {
             method: 'PUT',

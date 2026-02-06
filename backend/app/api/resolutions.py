@@ -192,6 +192,7 @@ async def generate_resolution_roadmap(
                 "verification_criteria", "Demonstrate understanding"
             ),
             target_date=target_date,
+            status="in_progress" if m.get("order") == 1 else "pending",
         )
         db.add(milestone)
         milestones.append(milestone)
@@ -301,6 +302,7 @@ async def complete_milestone(
 
     milestone.status = "completed"
     milestone.completed_at = datetime.utcnow()
+    milestone.progress_percentage = 100.0
 
     resolution_result = await db.execute(
         select(Resolution)
@@ -795,6 +797,7 @@ async def save_manual_roadmap(
             description=m_data.description,
             verification_criteria=m_data.verification_criteria,
             target_date=m_data.target_date,
+            status="in_progress" if i == 1 else "pending",
         )
         db.add(milestone)
         milestones.append(milestone)

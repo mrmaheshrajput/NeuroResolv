@@ -94,6 +94,7 @@ class Milestone(Base):
     target_date: Mapped[Optional[datetime]] = mapped_column(Date, nullable=True)
 
     status: Mapped[str] = mapped_column(String(50), default="pending")
+    progress_percentage: Mapped[float] = mapped_column(Float, default=0.0)
     is_edited: Mapped[bool] = mapped_column(Boolean, default=False)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 

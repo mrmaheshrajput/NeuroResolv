@@ -141,6 +141,7 @@ class MilestoneResponse(BaseModel):
     verification_criteria: str
     target_date: Optional[date]
     status: str
+    progress_percentage: float
     is_edited: bool
     completed_at: Optional[datetime]
 

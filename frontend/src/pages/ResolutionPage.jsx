@@ -171,6 +171,15 @@ export default function ResolutionPage() {
         }
     }
 
+    async function handleCompleteMilestone(milestoneId) {
+        try {
+            await api.completeMilestone(milestoneId)
+            await loadData()
+        } catch (error) {
+            alert('Failed to complete milestone: ' + error.message)
+        }
+    }
+
     if (loading) {
         return (
             <div className="resolution-page">
@@ -558,39 +567,71 @@ export default function ResolutionPage() {
                                     </div>
                                 ) : (
                                     <div className="milestones-list">
-                                        {roadmap?.milestones?.map((milestone, i) => (
-                                            <div
-                                                key={milestone.id}
-                                                className={`milestone-card ${milestone.status}`}
-                                            >
-                                                <div className="milestone-number">
-                                                    {milestone.status === 'completed' ? (
-                                                        <CheckCircle size={24} />
-                                                    ) : (
-                                                        <span>{i + 1}</span>
-                                                    )}
-                                                </div>
-                                                <div className="milestone-content">
-                                                    <h3>{milestone.title}</h3>
-                                                    <p>{milestone.description}</p>
-                                                    <div className="milestone-meta">
-                                                        <span className="verification-label">
-                                                            <Target size={14} />
-                                                            {milestone.verification_criteria}
-                                                        </span>
-                                                        {milestone.target_date && (
-                                                            <span className="target-date">
-                                                                <Calendar size={14} />
-                                                                Target: {new Date(milestone.target_date).toLocaleDateString()}
-                                                            </span>
+                                        {roadmap?.milestones?.map((milestone, i) => {
+                                            const isActive = milestone.status === 'in_progress';
+
+                                            return (
+                                                <div
+                                                    key={milestone.id}
+                                                    className={`milestone-card ${milestone.status}`}
+                                                >
+                                                    <div className="milestone-number">
+                                                        {milestone.status === 'completed' ? (
+                                                            <CheckCircle size={24} />
+                                                        ) : (
+                                                            <span>{i + 1}</span>
                                                         )}
                                                     </div>
-                                                    {milestone.is_edited && (
-                                                        <span className="edited-badge">Edited</span>
-                                                    )}
+                                                    <div className="milestone-content">
+                                                        <div className="milestone-header">
+                                                            <h3>{milestone.title}</h3>
+                                                            {milestone.status !== 'completed' && (
+                                                                <span className="milestone-progress-text">
+                                                                    {Math.round(milestone.progress_percentage || 0)}%
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p>{milestone.description}</p>
+
+                                                        {milestone.status !== 'completed' && (
+                                                            <div className="milestone-progress-bar">
+                                                                <div
+                                                                    className="progress-fill"
+                                                                    style={{ width: `${milestone.progress_percentage || 0}%` }}
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        <div className="milestone-footer">
+                                                            <div className="milestone-meta">
+                                                                <span className="verification-label">
+                                                                    <Target size={14} />
+                                                                    {milestone.verification_criteria}
+                                                                </span>
+                                                                {milestone.target_date && (
+                                                                    <span className="target-date">
+                                                                        <Calendar size={14} />
+                                                                        Target: {new Date(milestone.target_date).toLocaleDateString()}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {isActive && (
+                                                                <button
+                                                                    className="btn btn-primary btn-xs complete-milestone-btn"
+                                                                    onClick={() => handleCompleteMilestone(milestone.id)}
+                                                                >
+                                                                    <CheckCircle size={14} />
+                                                                    Complete
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        {milestone.is_edited && (
+                                                            <span className="edited-badge">Edited</span>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>

@@ -194,9 +194,6 @@ async def fetch_user_traces(resolution_id: int, limit: int = 10) -> list[dict]:
         return []
 
     try:
-        # TODO: Opik SDK might have different search methods based on version.
-        # This is a generic implementation using the search API if available.
-        # If the SDK doesn't support searching, I'd have to fallback to a mock or direct REST.
         traces = client.search_traces(
             project_name=settings.opik_project_name,
             filter_string=f"input.resolution_id = {resolution_id}",

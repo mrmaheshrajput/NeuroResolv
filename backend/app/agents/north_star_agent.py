@@ -135,7 +135,12 @@ async def generate_north_star(
 
 @track_llm_call(
     name="regenerate_north_star_with_feedback",
-    tags=["north_star_agent", "llm_call", "feedback"],
+    tags=[
+        "north_star_agent",
+        "llm_call",
+        "feedback",
+        "prompt:GENERATE_NORTH_STAR_PROMPT",
+    ],
 )
 async def regenerate_north_star_with_feedback(
     resolution_goal: str,

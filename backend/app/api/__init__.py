@@ -1,6 +1,7 @@
 from app.api.auth import router as auth_router
 from app.api.email import router as email_router
 from app.api.progress import router as progress_router
+from app.api.prompt_optimization import router as prompt_optimization_router
 from app.api.resolutions import router as resolutions_router
 from app.api.streak_groups import router as streak_groups_router
 
@@ -10,4 +11,5 @@ __all__ = [
     "resolutions_router",
     "progress_router",
     "streak_groups_router",
+    "prompt_optimization_router",
 ]

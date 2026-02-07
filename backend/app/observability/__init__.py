@@ -6,6 +6,8 @@ from app.observability.opik_integration import (
     init_opik,
     log_adaptive_decision,
     log_roadmap_feedback,
+    optimize_all_prompts,
+    run_prompt_optimization,
     track_learning_progression,
     track_llm_call,
 )
@@ -20,4 +22,6 @@ __all__ = [
     "track_learning_progression",
     "get_learning_analytics",
     "log_roadmap_feedback",
+    "run_prompt_optimization",
+    "optimize_all_prompts",
 ]

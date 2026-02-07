@@ -321,7 +321,7 @@ async def send_scheduled_emails(
             if success:
                 logger.info(f"Successfully sent email to user {user_id}")
                 # Update last email sent timestamp
-                pref.last_email_sent_at = datetime.now(timezone.utc)
+                pref.last_email_sent_at = datetime.utcnow()
                 pref.last_email_type = email_type.value
                 await db.commit()
 
@@ -348,6 +348,7 @@ async def send_scheduled_emails(
         except Exception as e:
             logger.error(f"Error sending email to user {user_id}: {e}")
             logger.exception(e)
+            await db.rollback()
             results.append(
                 SendEmailResult(
                     user_id=user_id,

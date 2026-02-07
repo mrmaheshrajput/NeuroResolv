@@ -13,6 +13,19 @@ settings = get_settings()
 
 _opik_client: Optional[Opik] = None
 
+PROMPT_CONFIGS = {
+    "GENERATE_ROADMAP_PROMPT": {
+        "tag": "prompt:GENERATE_ROADMAP_PROMPT",
+        "input_fields": ["goal_statement", "category", "skill_level", "cadence"],
+        "description": "Generates personalized learning roadmap milestones",
+    },
+    "GENERATE_NORTH_STAR_PROMPT": {
+        "tag": "prompt:GENERATE_NORTH_STAR_PROMPT",
+        "input_fields": ["resolution_goal", "category", "skill_level"],
+        "description": "Generates end-of-year transformation vision",
+    },
+}
+
 
 def get_opik_client() -> Optional[Opik]:
     global _opik_client
@@ -259,3 +272,242 @@ async def log_roadmap_feedback(
         )
     except Exception:
         pass
+
+
+async def fetch_feedback_traces(prompt_name: str, limit: int = 50) -> list:
+    """
+    Fetch traces with negative feedback for a specific prompt.
+
+    Args:
+        prompt_name: One of GENERATE_ROADMAP_PROMPT or GENERATE_NORTH_STAR_PROMPT
+        limit: Maximum number of traces to fetch
+    """
+    client = get_opik_client()
+    if not client:
+        return []
+
+    config = PROMPT_CONFIGS.get(prompt_name)
+    if not config:
+        logging.warning(f"Unknown prompt name: {prompt_name}")
+        return []
+
+    try:
+        # Search for traces with the feedback tag
+        # The tag format is "prompt:PROMPT_NAME"
+        traces = client.search_traces(
+            project_name=settings.opik_project_name,
+            filter_string=f'tags contains "{config['tag']}"',
+            max_results=limit,
+        )
+
+        # Filter for traces that have negative feedback (thumbs_down)
+        feedback_traces = []
+        for trace in traces:
+            if trace.span_feedback_scores:
+                for feedback_score in trace.span_feedback_scores:
+                    if feedback_score.name == "User feedback":
+                        if int(feedback_score.value) == 0:
+                            feedback_traces.append(trace)
+
+        return feedback_traces
+
+    except Exception as e:
+        logging.error(f"Failed to fetch feedback traces: {e}")
+        return []
+
+
+def build_optimization_dataset(traces: list, prompt_name: str) -> list[dict]:
+    """
+    Transform feedback traces into a dataset suitable for MetaPromptOptimizer.
+
+    Each dataset item contains:
+    - input: The original parameters passed to the prompt
+    - output: The user's feedback (what they wanted instead)
+    - metadata: Additional context
+    """
+    config = PROMPT_CONFIGS.get(prompt_name, {})
+    input_fields = config.get("input_fields", [])
+
+    dataset_items = []
+    for trace in traces:
+        try:
+            trace_input = trace.input or {}
+            item_input = {
+                field: trace_input.get(field, "")
+                for field in input_fields
+                if trace_input.get(field)
+            }
+
+            feedback_text = ""
+            if trace.output:
+                feedback_text = trace.output.get("feedback_text", "")
+
+            if not feedback_text or len(feedback_text) < 10:
+                continue
+
+            dataset_items.append(
+                {
+                    "input": item_input,
+                    "expected_output": feedback_text,
+                    "metadata": {
+                        "trace_id": str(trace.id),
+                        "original_response": trace.output.get("original_content", ""),
+                    },
+                }
+            )
+
+        except Exception as e:
+            logging.warning(f"Skipping trace due to error: {e}")
+            continue
+
+    return dataset_items
+
+
+async def run_prompt_optimization(
+    prompt_name: str,
+    min_samples: int = 5,
+    n_trials: int = 3,
+) -> dict:
+    """
+    Run MetaPromptOptimizer on a prompt using collected feedback data.
+
+    Args:
+        prompt_name: Name of the prompt to optimize (e.g., "GENERATE_ROADMAP_PROMPT")
+        min_samples: Minimum number of feedback samples required to run optimization
+        n_trials: Number of optimization trials
+
+    Returns:
+        dict with optimization results or error information
+    """
+    client = get_opik_client()
+    if not client:
+        return {"status": "error", "message": "Opik client not available"}
+
+    # Fetch feedback traces
+    traces = await fetch_feedback_traces(prompt_name)
+    if len(traces) < min_samples:
+        return {
+            "status": "skipped",
+            "message": f"Not enough feedback samples. Got {len(traces)}, need {min_samples}",
+            "prompt_name": prompt_name,
+        }
+
+    # Build dataset
+    dataset_items = build_optimization_dataset(traces, prompt_name)
+    if len(dataset_items) < min_samples:
+        return {
+            "status": "skipped",
+            "message": f"Not enough valid dataset items. Got {len(dataset_items)}, need {min_samples}",
+            "prompt_name": prompt_name,
+        }
+
+    try:
+        from opik_optimizer import MetaPromptOptimizer, ChatPrompt
+        from opik.evaluation.metrics import LevenshteinRatio
+
+        current_prompt = client.get_prompt(name=prompt_name)
+        current_prompt_text = current_prompt.prompt
+
+        chat_prompt = ChatPrompt(
+            messages=[
+                {"role": "system", "content": current_prompt_text},
+                {"role": "user", "content": "{input}"},
+            ]
+        )
+
+        dataset = client.create_dataset(
+            name=f"feedback-optimization-{prompt_name}",
+            description=f"Auto-generated dataset for {prompt_name} optimization",
+        )
+        for item in dataset_items:
+            dataset.insert(
+                [
+                    {
+                        "input": str(item["input"]),
+                        "expected_output": item["expected_output"],
+                    }
+                ]
+            )
+
+        optimizer = MetaPromptOptimizer(
+            model="gemini-2.5-flash-lite",
+            project_name=settings.opik_project_name,
+            n_threads=4,
+        )
+
+        def feedback_alignment(dataset_item, llm_output):
+            """Score based on output alignment with expected feedback direction."""
+            return LevenshteinRatio().score(
+                reference=dataset_item.get("expected_output", ""), output=llm_output
+            )
+
+        # Run optimization
+        result = optimizer.optimize_prompt(
+            prompt=chat_prompt,
+            dataset=dataset,
+            metric=feedback_alignment,
+            n_samples=min(len(dataset_items), 20),
+        )
+
+        # Extract the optimized prompt
+        optimized_prompt_text = ""
+        if result and hasattr(result, "prompt") and result.prompt.messages:
+            # Get the system message which contains the optimized prompt
+            for msg in result.prompt.messages:
+                if msg.get("role") == "system":
+                    optimized_prompt_text = msg.get("content", "")
+                    break
+
+        if optimized_prompt_text:
+            # Create new prompt version in Opik
+            new_prompt = client.create_prompt(
+                name=prompt_name,
+                prompt=optimized_prompt_text,
+            )
+
+            return {
+                "status": "success",
+                "prompt_name": prompt_name,
+                "new_version": (
+                    new_prompt.version if hasattr(new_prompt, "version") else "created"
+                ),
+                "samples_used": len(dataset_items),
+                "improvement_score": result.score if hasattr(result, "score") else None,
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "Optimization completed but no improved prompt generated",
+                "prompt_name": prompt_name,
+            }
+
+    except ImportError as e:
+        return {
+            "status": "error",
+            "message": f"opik-optimizer not installed: {e}",
+            "prompt_name": prompt_name,
+        }
+    except Exception as e:
+        logging.error(f"Prompt optimization failed: {e}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "prompt_name": prompt_name,
+        }
+
+
+async def optimize_all_prompts(min_samples: int = 5) -> list[dict]:
+    """
+    Run optimization for all configured prompts.
+
+    Returns:
+        List of optimization results for each prompt
+    """
+    results = []
+    for prompt_name in PROMPT_CONFIGS.keys():
+        result = await run_prompt_optimization(
+            prompt_name=prompt_name,
+            min_samples=min_samples,
+        )
+        results.append(result)
+    return results

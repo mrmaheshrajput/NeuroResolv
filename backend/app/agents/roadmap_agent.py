@@ -349,7 +349,7 @@ def calculate_next_refresh_date(
 
 @track_llm_call(
     name="regenerate_roadmap_with_feedback",
-    tags=["roadmap_agent", "llm_call", "feedback"],
+    tags=["roadmap_agent", "llm_call", "feedback", "prompt:GENERATE_ROADMAP_PROMPT"],
 )
 async def regenerate_roadmap_with_feedback(
     goal_statement: str,

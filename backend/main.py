@@ -4,6 +4,7 @@ from app.api import (
     auth_router,
     email_router,
     progress_router,
+    prompt_optimization_router,
     resolutions_router,
     streak_groups_router,
 )
@@ -64,6 +65,7 @@ app.include_router(resolutions_router, dependencies=[Depends(verify_api_key)])
 app.include_router(progress_router, dependencies=[Depends(verify_api_key)])
 app.include_router(email_router, dependencies=[Depends(verify_api_key)])
 app.include_router(streak_groups_router, dependencies=[Depends(verify_api_key)])
+app.include_router(prompt_optimization_router, dependencies=[Depends(verify_api_key)])
 
 
 @app.get("/")

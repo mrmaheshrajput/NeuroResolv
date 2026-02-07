@@ -2,13 +2,14 @@ import json
 from datetime import datetime, timedelta
 
 from app.config import get_settings
-from app.observability import get_learning_analytics, track_llm_call
+from app.observability import get_learning_analytics, track_llm_call, get_opik_client
 from google import genai
 from google.genai import types
 from opik.integrations.genai import track_genai
 
 settings = get_settings()
 client = track_genai(genai.Client(api_key=settings.google_api_key))
+opik_client = get_opik_client()
 
 
 ROADMAP_SYSTEM_PROMPT = """You are an expert learning architect who creates personalized milestone-based roadmaps.
@@ -55,25 +56,23 @@ async def generate_roadmap(
     }
     cadence_description = cadence_map.get(cadence, "Learning regularly")
 
-    prompt = f"""Create a personalized learning roadmap for this goal:
-
-GOAL: {goal_statement}
-
-CATEGORY: {category}
-
-CURRENT SKILL LEVEL: {skill_level or "Not specified - please assess from the goal"}
-
-LEARNING CADENCE: {cadence_description}
-
-Generate a milestone-based roadmap that will guide this learner to achieve their goal.
-Each milestone should have clear, demonstrable verification criteria."""
+    prompt = opik_client.get_prompt(name="GENERATE_ROADMAP_PROMPT")
+    formatted_prompt = prompt.prompt.format(
+        goal_statement=goal_statement,
+        category=category,
+        skill_level=(
+            skill_level
+            if skill_level
+            else "Not specified - please assess from the goal"
+        ),
+        cadence_description=cadence_description,
+    )
 
     try:
         response = await client.aio.models.generate_content(
             model="gemini-2.5-flash-lite",
-            contents=prompt,
+            contents=formatted_prompt,
             config=types.GenerateContentConfig(
-                system_instruction=ROADMAP_SYSTEM_PROMPT,
                 temperature=0.7,
                 response_mime_type="application/json",
             ),
@@ -128,7 +127,6 @@ def _generate_fallback_roadmap(goal: str, category: str, cadence: str) -> dict:
     }
 
 
-# TODO: This is not used
 @track_llm_call(name="refine_milestone", tags=["roadmap_agent", "llm_call"])
 async def refine_milestone(
     milestone_title: str,
@@ -350,7 +348,8 @@ def calculate_next_refresh_date(
 
 
 @track_llm_call(
-    name="regenerate_roadmap_with_feedback", tags=["roadmap_agent", "llm_call"]
+    name="regenerate_roadmap_with_feedback",
+    tags=["roadmap_agent", "llm_call", "feedback"],
 )
 async def regenerate_roadmap_with_feedback(
     goal_statement: str,

@@ -2,7 +2,6 @@
 Email service for sending emails via AWS SES.
 """
 
-import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -10,7 +9,6 @@ from typing import Optional
 
 from app.config import get_settings
 
-logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
@@ -35,13 +33,13 @@ async def send_email(
         True if email was sent successfully, False otherwise
     """
     if settings.environment == "development":
-        logger.info(f"[DEV MODE] Would send email to: {to_email}")
-        logger.info(f"[DEV MODE] Subject: {subject}")
-        logger.info(f"[DEV MODE] Content preview: {text_content[:200]}...")
+        print(f"[DEV MODE] Would send email to: {to_email}")
+        print(f"[DEV MODE] Subject: {subject}")
+        print(f"[DEV MODE] Content preview: {text_content[:200]}...")
         return True
 
     if not settings.gmail_email or not settings.gmail_app_password:
-        logger.error("Email service requested but Gmail credentials are not configured")
+        print("Email service requested but Gmail credentials are not configured")
         return False
 
     msg = MIMEMultipart("alternative")
@@ -57,11 +55,11 @@ async def send_email(
             server.login(settings.gmail_email, settings.gmail_app_password)
             server.sendmail(settings.gmail_email, to_email, msg.as_string())
 
-        logger.info(f"Email sent successfully to {to_email}")
+        print(f"Email sent successfully to {to_email}")
         return True
 
     except Exception as e:
-        logger.error(f"Failed to send email to {to_email}: {e}")
+        print(f"Failed to send email to {to_email}: {e}")
         return False
 
 

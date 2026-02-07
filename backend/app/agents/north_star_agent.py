@@ -8,13 +8,14 @@ import json
 from datetime import datetime
 
 from app.config import get_settings
-from app.observability import get_learning_analytics, track_llm_call
+from app.observability import get_learning_analytics, track_llm_call, get_opik_client
 from google import genai
 from google.genai import types
 from opik.integrations.genai import track_genai
 
 settings = get_settings()
 client = track_genai(genai.Client(api_key=settings.google_api_key))
+opik_client = get_opik_client()
 
 
 NORTH_STAR_SYSTEM_PROMPT = """You are a life coach who helps people envision their best selves.
@@ -89,42 +90,37 @@ async def generate_north_star(
     if resolution_id:
         analytics = await get_learning_analytics(resolution_id)
         if analytics.get("status") != "no_data":
-            mastered = analytics.get("mastered_concepts", [])
-            avg_score = analytics.get("avg_quiz_score", 0)
-
-            _opik_context = f"\nOPIK TRANSFORMATION CONTEXT:\n"
-            _opik_context += f"- Current Mastery Level: {avg_score*100:.1f}%\n"
-            if mastered:
-                _opik_context += (
-                    f"- Demonstrated competency in: {', '.join(mastered[:5])}\n"
+            reflections = analytics.get("reflections", [])
+            if reflections:
+                _opik_context += f"\nHISTORICAL TRANSFORMATION CONTEXT:\n"
+                _opik_context += "\n".join(
+                    f"- {json.dumps(reflection, indent=2)}"
+                    for reflection in reflections[:5]
                 )
 
     # Current year's end
     current_year_end = datetime(datetime.now().year, 12, 31).strftime("%B %d, %Y")
 
-    prompt = f"""Create a North Star goal for this person:
-
-THEIR RESOLUTION: {resolution_goal}
-CATEGORY: {category}
-CURRENT LEVEL: {skill_level or "Beginning their journey"}
-{milestones_context}
-{_opik_context}
-
-TARGET DATE: {current_year_end}
-{f"PROGRESS SO FAR: {progress_summary}" if progress_summary else ""}
-
-Generate an inspiring vision of who they'll become by the end of the year.
-Focus on transformation and identity, not tasks completed.
-Use the OPIK context to see where they are already showing mastery and push them towards a stronger identity in those areas."""
+    prompt = opik_client.get_prompt(name="GENERATE_NORTH_STAR_PROMPT")
+    formatted_prompt = prompt.prompt.format(
+        resolution_goal=resolution_goal,
+        category=category,
+        skill_level=skill_level if skill_level else "Beginning their journey",
+        milestones_context=milestones_context,
+        _opik_context=_opik_context,
+        current_year_end=current_year_end,
+        progress_summary=(
+            f"PROGRESS SO FAR: {progress_summary}" if progress_summary else ""
+        ),
+    )
 
     try:
         MODEL = "gemini-2.5-flash-lite"
         response = await client.aio.models.generate_content(
             model=MODEL,
-            contents=prompt,
+            contents=formatted_prompt,
             config=types.GenerateContentConfig(
-                system_instruction=NORTH_STAR_SYSTEM_PROMPT,
-                temperature=1.0,  # Slightly higher for more creative output
+                temperature=1.0,
                 response_mime_type="application/json",
             ),
         )
@@ -133,11 +129,13 @@ Use the OPIK context to see where they are already showing mastery and push them
         return result
 
     except Exception as e:
+        print(e)
         return _generate_fallback_north_star(resolution_goal, category)
 
 
 @track_llm_call(
-    name="regenerate_north_star_with_feedback", tags=["north_star_agent", "llm_call"]
+    name="regenerate_north_star_with_feedback",
+    tags=["north_star_agent", "llm_call", "feedback"],
 )
 async def regenerate_north_star_with_feedback(
     resolution_goal: str,

@@ -23,22 +23,36 @@ def create_database_if_not_exists() -> bool:
     Returns True if database was created, False if it already exists.
     """
     settings = get_settings()
-    creds = get_db_credentials(
-        secret_name=settings.db_secret_name,
-        region_name=settings.aws_region,
-    )
+
+    if settings.environment == "production":
+        creds_fetch = get_db_credentials(
+            secret_name=settings.db_secret_name,
+            region_name=settings.aws_region,
+        )
+        creds = {
+            "username": creds_fetch["username"],
+            "password": creds_fetch["password"],
+            "host": creds_fetch["host"],
+            "port": str(creds_fetch["port"]),
+            "dbname": creds_fetch["dbname"],
+        }
+    else:
+        creds = {
+            "username": settings.db_user,
+            "password": settings.db_password,
+            "host": settings.db_host,
+            "port": str(settings.db_port),
+            "dbname": settings.db_name,
+        }
 
     encoded_password = quote_plus(creds["password"])
     target_db = creds["dbname"]
 
     # Connect to the default 'postgres' database to create the target database
-    # TODO: Fix this redundant code
-    # admin_url = (
-    #     f"postgresql+psycopg2://{creds['username']}:{encoded_password}"
-    #     f"@{creds['host']}:{creds['port']}/postgres"
-    # )
-    admin_url = get_sync_database_url()
-    admin_url = admin_url.replace("5432/neuroresolv", "5432/postgres")
+    admin_url = (
+        f"postgresql+psycopg2://{creds['username']}:{encoded_password}"
+        f"@{creds['host']}:{creds['port']}/postgres"
+    )
     engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
     try:
         with engine.connect() as conn:

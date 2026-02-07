@@ -197,16 +197,19 @@ async def send_scheduled_emails(
         )
     )
     queued_emails = queue_result.scalars().all()
+    print(f"Found {len(queued_emails)} queued emails")
     for q_email in queued_emails:
+        print(f"Processing queued email for user {q_email.user_id}")
         try:
             user_result = await db.execute(
                 select(User).where(User.id == q_email.user_id)
             )
             user = user_result.scalar_one_or_none()
             if not user:
+                print(f"User not found for queued email {q_email.id}")
                 q_email.status = "failed"
                 continue
-
+            print(f"Sending queued email to user {user.id}")
             success = await send_email(
                 to_email=user.email,
                 subject=q_email.subject,
@@ -214,27 +217,33 @@ async def send_scheduled_emails(
                 text_content=q_email.text_content,
             )
             if success:
+                print(f"Successfully sent queued email to user {user.id}")
                 q_email.status = "sent"
                 q_email.sent_at = datetime.utcnow()
                 total_sent += 1
             else:
+                print(f"Failed to send queued email to user {user.id}")
                 q_email.status = "failed"
                 total_failed += 1
         except Exception as e:
-            logger.error(f"Error sending queued email {q_email.id}: {e}")
+            print(f"Error sending queued email {q_email.id}: {e}")
+            print(e)
             q_email.status = "failed"
             total_failed += 1
 
     await db.commit()
+    print(f"Processed {len(queued_emails)} queued emails")
 
     # 2. Process regular triggers
     for user_id in request.user_ids:
+        print(f"Processing regular email for user {user_id}")
         try:
             # Get user and their data
             user_result = await db.execute(select(User).where(User.id == user_id))
             user = user_result.scalar_one_or_none()
 
             if not user:
+                print(f"User not found for regular email {user_id}")
                 results.append(
                     SendEmailResult(
                         user_id=user_id,
@@ -252,8 +261,9 @@ async def send_scheduled_emails(
                 )
             )
             pref = pref_result.scalar_one_or_none()
-
+            print(f"User {user_id} email preference: {pref.email_opt_in}")
             if not pref or not pref.email_opt_in:
+                print(f"User not opted in for regular email {user_id}")
                 results.append(
                     SendEmailResult(
                         user_id=user_id,
@@ -268,8 +278,9 @@ async def send_scheduled_emails(
             email_type = await determine_email_type(
                 user_id, db, metadata={"customer_id": user_id}
             )
-
+            print(f"User {user_id} email type: {email_type}")
             if not email_type:
+                print(f"No email needed for user {user_id}")
                 results.append(
                     SendEmailResult(
                         user_id=user_id,
@@ -282,7 +293,7 @@ async def send_scheduled_emails(
             email_content = await generate_email_content(
                 user_id, email_type, db, metadata={"customer_id": user_id}
             )
-
+            print(f"User {user_id} email content: {email_content.get('should_send')}")
             if not email_content.get("should_send", False):
                 results.append(
                     SendEmailResult(
@@ -295,6 +306,7 @@ async def send_scheduled_emails(
                 continue
 
             # Send the email
+            print(f"Sending email to user {user_id}")
             success = await send_email(
                 to_email=user.email,
                 subject=email_content["subject"],
@@ -303,8 +315,9 @@ async def send_scheduled_emails(
             )
 
             if success:
+                print(f"Successfully sent email to user {user_id}")
                 # Update last email sent timestamp
-                pref.last_email_sent_at = datetime.now(timezone.utc)
+                pref.last_email_sent_at = datetime.utcnow()
                 pref.last_email_type = email_type.value
                 await db.commit()
 
@@ -317,6 +330,7 @@ async def send_scheduled_emails(
                 )
                 total_sent += 1
             else:
+                print(f"Failed to send email to user {user_id}")
                 results.append(
                     SendEmailResult(
                         user_id=user_id,
@@ -328,6 +342,9 @@ async def send_scheduled_emails(
                 total_failed += 1
 
         except Exception as e:
+            print(f"Error sending email to user {user_id}: {e}")
+            print(e)
+            await db.rollback()
             results.append(
                 SendEmailResult(
                     user_id=user_id,

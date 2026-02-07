@@ -95,6 +95,7 @@ async def evaluate_quiz_quality(
 
 
 async def _assess_question_relevance(question: str, content: str) -> float:
+    # I don't even know why we need this function, but here it is
     return 0.85
 
 
@@ -193,17 +194,16 @@ async def fetch_user_traces(resolution_id: int, limit: int = 10) -> list[dict]:
         return []
 
     try:
-        # TODO: Opik SDK might have different search methods based on version.
-        # This is a generic implementation using the search API if available.
-        # If the SDK doesn't support searching, I'd have to fallback to a mock or direct REST.
         traces = client.search_traces(
             project_name=settings.opik_project_name,
-            filter_expression=f"input.resolution_id == {resolution_id}",
+            filter_string=f"input.resolution_id = {resolution_id}",
             limit=limit,
         )
         return traces
-    except Exception:
+    except Exception as e:
         # Fallback if search_traces is not implemented or fails
+        print("Failed to fetch traces for resolution_id", resolution_id)
+        print(e)
         return []
 
 
@@ -214,27 +214,18 @@ async def get_learning_analytics(resolution_id: int) -> dict:
     if not traces:
         return {"status": "no_data"}
 
-    learning_traces = [t for t in traces if t.get("name") == "learning_progression"]
+    learning_traces = [t for t in traces if t.name == "analyze_checkin"]
 
     if not learning_traces:
         return {"status": "no_learning_data"}
 
-    mastered = set()
-    weak = set()
-    scores = []
+    reflections = []
 
     for t in learning_traces:
-        output = t.get("output", {})
-        mastered.update(output.get("concepts_mastered", []))
-        weak.update(output.get("concepts_weak", []))
-        scores.append(t.get("input", {}).get("quiz_score", 0))
-
-    avg_score = sum(scores) / len(scores) if scores else 0
+        reflections.append(t.output)
 
     return {
-        "avg_quiz_score": avg_score,
-        "mastered_concepts": list(mastered),
-        "weak_concepts": list(weak - mastered),  # Focus on things still weak
+        "reflections": reflections,
         "total_sessions": len(learning_traces),
     }
 

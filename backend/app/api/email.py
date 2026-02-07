@@ -6,6 +6,7 @@ and provides internal endpoints for the Lambda email scheduler.
 """
 
 from datetime import datetime, timezone
+import logging
 from typing import Optional
 from zoneinfo import ZoneInfo
 
@@ -26,6 +27,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/email", tags=["Email"])
 
 

@@ -6,7 +6,7 @@
       <stop offset="100%" style="stop-color:#f59e0b" />
     </linearGradient>
   </defs>
-  
+
   <!-- Icon (Brain) - Updated to solid color #c084fc -->
   <g transform="translate(10, 16) scale(2)">
     <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>

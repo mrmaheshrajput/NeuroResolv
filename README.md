@@ -1,7 +1,7 @@
 <h1 align="center" style="border-bottom: none">
     <div>
         <a href="https://neuro-resolv.vercel.app/"><picture>
-            <img alt="NeuroResolv logo" src="https://raw.githubusercontent.com/mrmaheshrajput/NeuroResolv/refs/heads/main/frontend/public/favicon.svg" width="60" />
+            <img alt="NeuroResolv logo" src="https://raw.githubusercontent.com/mrmaheshrajput/NeuroResolv/refs/heads/main/frontend/public/icon.svg" width="60" />
         </picture></a>
         <br>
         NeuroResolv 🧠✨
@@ -17,11 +17,10 @@ Transform your New Year's resolutions from simple task tracking into genuine lea
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff)](#)
 [![React](https://img.shields.io/badge/React-%2320232a.svg?logo=react&logoColor=%2361DAFB)](#)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009485.svg?logo=fastapi&logoColor=white)](#)
-[![Google Gemini](https://img.shields.io/badge/Google%20Gemini-886FBF?logo=googlegemini&logoColor=fff)](#)
-[![AWS](https://custom-icon-badges.demolab.com/badge/AWS-%23FF9900.svg?logo=aws&logoColor=white)](#)
+[![Opik](https://img.shields.io/badge/Opik-by_Comet-blue)](https://github.com/comet-ml/opik)
+[![Google Gemini](https://img.shields.io/badge/Google%20Gemini-886FBF?logo=googlegemini&logoColor=fff)](https://deepmind.google/models/gemini/)
+[![Vercel](https://img.shields.io/badge/Vercel-%23000000.svg?logo=vercel&logoColor=white)](https://vercel.com/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=fff)](#)
-[![Vercel](https://img.shields.io/badge/Vercel-%23000000.svg?logo=vercel&logoColor=white)](#)
-[![CircleCI](https://img.shields.io/badge/CircleCI-343434?logo=circleci&logoColor=fff)](#)
 
 </div>
 

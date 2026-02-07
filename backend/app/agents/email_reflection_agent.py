@@ -11,7 +11,7 @@ from typing import Optional
 
 from app.config import get_settings
 from app.db import ProgressLog, Resolution, Streak, User, Milestone
-from app.observability import track_llm_call
+from app.observability import track_llm_call, get_opik_client
 from app.schemas import EmailType
 from google import genai
 from google.genai import types
@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 settings = get_settings()
 client = track_genai(genai.Client(api_key=settings.google_api_key))
+opik_client = get_opik_client()
 
 MODEL = "gemini-2.5-flash-lite"
 
@@ -252,50 +253,22 @@ async def _get_user_context(
     }
 
 
-LEARNING_REFLECTION_PROMPT = """You are writing a personalized learning reflection email for a user of NeuroResolv, a goal-tracking app focused on learning and personal development.
-
-Your email should:
-1. Be warm, thoughtful, and genuinely encouraging
-2. Reference specific details from their recent activity to show personalization
-3. Help them see patterns in their learning journey
-4. Stay concise - people are busy. Aim for 3-4 short paragraphs max.
-5. Focus on the PROCESS of learning, not just outcomes
-6. Be transformational, not transactional
-
-Tone: Like a wise mentor who genuinely cares about their growth
-
-Return a JSON object with:
-{
-  "subject": "A brief, engaging subject line (no emojis)",
-  "content": "The email body text (plain text, use \\n for line breaks)",
-  "key_insight": "One key observation about their learning pattern"
-}"""
-
-
 @track_llm_call(name="generate_learning_reflection", tags=["email_reflection_agent"])
 async def _generate_learning_reflection(user_context: dict) -> dict:
     """Generate a learning reflection email."""
-    prompt = f"""Generate a learning reflection email for this user:
-
-NAME: {user_context['user_name']}
-
-ACTIVE GOALS:
-{json.dumps(user_context['resolutions'], indent=2)}
-
-RECENT ACTIVITY (last 7 days):
-{json.dumps(user_context['recent_logs'], indent=2)}
-
-STREAK DATA:
-{json.dumps(user_context['streaks'], indent=2)}
-
-Generate an email that reflects on their learning journey this week."""
+    prompt = opik_client.get_prompt(name="Learning Reflection Prompt")
+    formatted_prompt = prompt.prompt.format(
+        user_name=user_context["user_name"],
+        user_context_resolutions=json.dumps(user_context["resolutions"], indent=2),
+        user_context_recent_logs=json.dumps(user_context["recent_logs"], indent=2),
+        user_context_streaks=json.dumps(user_context["streaks"], indent=2),
+    )
 
     try:
         response = await client.aio.models.generate_content(
             model=MODEL,
-            contents=prompt,
+            contents=formatted_prompt,
             config=types.GenerateContentConfig(
-                system_instruction=LEARNING_REFLECTION_PROMPT,
                 temperature=0.8,
                 response_mime_type="application/json",
             ),
@@ -323,49 +296,22 @@ Generate an email that reflects on their learning journey this week."""
         }
 
 
-MICRO_CELEBRATION_PROMPT = """You are writing a celebration email for a user who achieved something meaningful on NeuroResolv.
-
-Your email should:
-1. Celebrate their specific achievement genuinely (not generically)
-2. Connect this win to their larger journey
-3. Be SHORT - this is a celebration, not a lecture. 2-3 paragraphs max.
-4. Make them feel proud without being over-the-top
-5. Optionally mention what this milestone enables going forward
-
-Tone: Like a supportive friend who's genuinely happy for their success
-
-Return a JSON object with:
-{
-  "subject": "A celebratory but not cheesy subject line",
-  "content": "The email body text (plain text)",
-  "achievement_summary": "Brief summary of what they achieved"
-}"""
-
-
 @track_llm_call(name="generate_micro_celebration", tags=["email_reflection_agent"])
 async def _generate_micro_celebration(user_context: dict) -> dict:
     """Generate a micro-celebration email."""
-    prompt = f"""Generate a celebration email for this user:
-
-NAME: {user_context['user_name']}
-
-ACTIVE GOALS:
-{json.dumps(user_context['resolutions'], indent=2)}
-
-STREAK DATA:
-{json.dumps(user_context['streaks'], indent=2)}
-
-RECENT MILESTONES:
-{json.dumps(user_context['milestones'], indent=2)}
-
-Celebrate their recent achievement or streak milestone."""
+    prompt = opik_client.get_prompt(name="MICRO_CELEBRATION_PROMPT")
+    formatted_prompt = prompt.prompt.format(
+        user_name=user_context["user_name"],
+        user_context_resolutions=json.dumps(user_context["resolutions"], indent=2),
+        user_context_streaks=json.dumps(user_context["streaks"], indent=2),
+        user_context_milestones=json.dumps(user_context["milestones"], indent=2),
+    )
 
     try:
         response = await client.aio.models.generate_content(
             model=MODEL,
-            contents=prompt,
+            contents=formatted_prompt,
             config=types.GenerateContentConfig(
-                system_instruction=MICRO_CELEBRATION_PROMPT,
                 temperature=0.8,
                 response_mime_type="application/json",
             ),
@@ -394,45 +340,6 @@ Celebrate their recent achievement or streak milestone."""
         }
 
 
-STREAK_ENCOURAGEMENT_PROMPT = """You are writing an encouraging email for a user who has been away from NeuroResolv for a while.
-
-CRITICAL GUIDELINES:
-1. BE INCREDIBLY GENTLE - life happens, and we don't know what they're going through
-2. NO guilt-tripping, no "we miss you", no manipulation
-3. Acknowledge that taking breaks is sometimes exactly what we need
-4. Offer a tiny, low-pressure way to reconnect IF they're ready
-5. Make it clear there's no rush and no judgment
-6. Keep it SHORT - 2-3 paragraphs maximum
-7. Don't be preachy or lecture them about consistency
-
-Tone: Like a kind friend checking in, not a disappointed teacher
-
-Return a JSON object with:
-{
-  "subject": "A gentle, non-guilt-inducing subject line",
-  "content": "The email body text (plain text)",
-  "micro_action": "One tiny action they could take when ready (optional)"
-}"""
-
-
-WELCOME_BACK_PROMPT = """You are writing a warm welcome-back email for a user returning to NeuroResolv after a break.
-
-Your email should:
-1. Genuinely celebrate their return without any hint of judgment or guilt
-2. Acknowledge that life happens and breaks are part of the process
-3. Be brief, warm, and highly encouraging
-4. Focus on the excitement of picking back up where they left off
-5. 2-3 paragraphs max
-
-Tone: Warm, supportive, and genuinely happy to see them again
-
-Return a JSON object with:
-{
-  "subject": "A warm, welcoming subject line",
-  "content": "The email body text (plain text)"
-}"""
-
-
 @track_llm_call(
     name="generate_streak_encouragement", tags=["email_reflection_agent", "llm_call"]
 )
@@ -453,28 +360,20 @@ async def _generate_streak_encouragement(user_context: dict) -> dict:
             except Exception:
                 pass
 
-    prompt = f"""Generate a gentle re-engagement email for this user:
-
-NAME: {user_context['user_name']}
-
-DAYS SINCE LAST ACTIVITY: {days_away}
-
-THEIR GOALS (what they were working on):
-{json.dumps(user_context['resolutions'], indent=2)}
-
-THEIR PREVIOUS PROGRESS:
-{json.dumps(user_context['streaks'], indent=2)}
-
-Remember: Be incredibly gentle. They might be dealing with something difficult.
-Focus on their wellbeing first, goals second."""
+    prompt = opik_client.get_prompt(name="STREAK_ENCOURAGEMENT_PROMPT")
+    formatted_prompt = prompt.prompt.format(
+        user_name=user_context["user_name"],
+        days_away=days_away,
+        user_context_resolutions=json.dumps(user_context["resolutions"], indent=2),
+        user_context_streaks=json.dumps(user_context["streaks"], indent=2),
+    )
 
     try:
         response = await client.aio.models.generate_content(
             model=MODEL,
-            contents=prompt,
+            contents=formatted_prompt,
             config=types.GenerateContentConfig(
-                system_instruction=STREAK_ENCOURAGEMENT_PROMPT,
-                temperature=0.9,  # Higher temp for more personal feel
+                temperature=0.9,
                 response_mime_type="application/json",
             ),
         )
@@ -504,21 +403,17 @@ Focus on their wellbeing first, goals second."""
 @track_llm_call(name="generate_welcome_back", tags=["email_reflection_agent"])
 async def _generate_welcome_back_content(user_context: dict) -> dict:
     """Generate a warm welcome-back email."""
-    prompt = f"""Generate a warm welcome-back email for this user:
-
-NAME: {user_context['user_name']}
-
-THEIR GOALS (what they are working on):
-{json.dumps(user_context['resolutions'], indent=2)}
-
-Welcome them back warmly as they have just resumed their journey."""
+    prompt = opik_client.get_prompt(name="WELCOME_BACK_PROMPT")
+    formatted_prompt = prompt.prompt.format(
+        user_name=user_context["user_name"],
+        user_context_resolutions=json.dumps(user_context["resolutions"], indent=2),
+    )
 
     try:
         response = await client.aio.models.generate_content(
             model=MODEL,
-            contents=prompt,
+            contents=formatted_prompt,
             config=types.GenerateContentConfig(
-                system_instruction=WELCOME_BACK_PROMPT,
                 temperature=0.8,
                 response_mime_type="application/json",
             ),

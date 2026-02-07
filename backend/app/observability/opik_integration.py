@@ -95,6 +95,7 @@ async def evaluate_quiz_quality(
 
 
 async def _assess_question_relevance(question: str, content: str) -> float:
+    # I don't even know why we need this function, but here it is
     return 0.85
 
 

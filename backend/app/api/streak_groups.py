@@ -128,7 +128,9 @@ async def create_streak_group(
                 Resolution.user_id == m_user.id, Resolution.status == "active"
             )
         )
-        m_res = m_res_result.scalar_one_or_none()
+        m_res = (
+            m_res_result.scalars().first()
+        )  # Pick first if multiple, todo: revisit later
         if not m_res:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

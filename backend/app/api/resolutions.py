@@ -63,6 +63,7 @@ async def create_resolution(
         category=data.category.value,
         skill_level=data.skill_level.value if data.skill_level else None,
         cadence=data.cadence.value,
+        roadmap_mode=data.roadmap_mode.value,
     )
 
     db.add(resolution)
@@ -191,6 +192,7 @@ async def generate_resolution_roadmap(
                 "verification_criteria", "Demonstrate understanding"
             ),
             target_date=target_date,
+            status="in_progress" if m.get("order") == 1 else "pending",
         )
         db.add(milestone)
         milestones.append(milestone)
@@ -200,6 +202,7 @@ async def generate_resolution_roadmap(
 
     resolution.roadmap_generated = True
     resolution.roadmap_needs_refresh = False
+    resolution.next_roadmap_refresh = calculate_next_refresh_date(resolution.cadence)
 
     await db.commit()
 
@@ -299,6 +302,7 @@ async def complete_milestone(
 
     milestone.status = "completed"
     milestone.completed_at = datetime.utcnow()
+    milestone.progress_percentage = 100.0
 
     resolution_result = await db.execute(
         select(Resolution)
@@ -572,29 +576,10 @@ async def update_north_star(
     return north_star
 
 
-@router.post("/{resolution_id}/roadmap/refresh", response_model=LivingRoadmapResponse)
-async def refresh_living_roadmap(
-    resolution_id: int,
-    user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Trigger a living roadmap refresh based on recent progress."""
-    result = await db.execute(
-        select(Resolution)
-        .options(
-            selectinload(Resolution.milestones),
-            selectinload(Resolution.progress_logs),
-            selectinload(Resolution.streak),
-        )
-        .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
-    )
-    resolution = result.scalar_one_or_none()
-
-    if not resolution:
-        raise HTTPException(status_code=404, detail="Resolution not found")
-
+async def _perform_roadmap_refresh(db: AsyncSession, resolution: Resolution) -> dict:
+    """Internal helper to perform the roadmap refresh logic."""
     if not resolution.milestones:
-        raise HTTPException(status_code=400, detail="No roadmap to refresh")
+        return None
 
     milestones_data = [
         {
@@ -624,17 +609,15 @@ async def refresh_living_roadmap(
         current_milestones=milestones_data,
         progress_logs=progress_data,
         streak_data=streak_data,
-        metadata={"customer_id": user.id},
+        metadata={"customer_id": resolution.user_id},
     )
 
-    # TODO: Is this still used?
     likelihood_score = calculate_goal_likelihood_score(
         streak_data=streak_data,
         milestones=milestones_data,
         progress_logs=progress_data,
     )
 
-    # TODO: Is this still used?
     next_refresh = calculate_next_refresh_date(resolution.cadence)
 
     resolution.goal_likelihood_score = likelihood_score
@@ -645,14 +628,42 @@ async def refresh_living_roadmap(
 
     sorted_milestones = sorted(resolution.milestones, key=lambda m: m.order)
 
-    return LivingRoadmapResponse(
-        resolution_id=resolution.id,
-        milestones=[MilestoneResponse.model_validate(m) for m in sorted_milestones],
-        needs_refresh=False,
-        likelihood_score=likelihood_score,
-        next_refresh=next_refresh,
-        overall_assessment=update_data.get("overall_assessment"),
+    return {
+        "resolution_id": resolution.id,
+        "milestones": [MilestoneResponse.model_validate(m) for m in sorted_milestones],
+        "needs_refresh": False,
+        "likelihood_score": likelihood_score,
+        "next_refresh": next_refresh,
+        "overall_assessment": update_data.get("overall_assessment"),
+    }
+
+
+@router.post("/{resolution_id}/roadmap/refresh", response_model=LivingRoadmapResponse)
+async def refresh_living_roadmap(
+    resolution_id: int,
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Trigger a living roadmap refresh based on recent progress."""
+    result = await db.execute(
+        select(Resolution)
+        .options(
+            selectinload(Resolution.milestones),
+            selectinload(Resolution.progress_logs),
+            selectinload(Resolution.streak),
+        )
+        .where(Resolution.id == resolution_id, Resolution.user_id == user.id)
     )
+    resolution = result.scalar_one_or_none()
+
+    if not resolution:
+        raise HTTPException(status_code=404, detail="Resolution not found")
+
+    if not resolution.milestones:
+        raise HTTPException(status_code=400, detail="No roadmap to refresh")
+
+    refresh_result = await _perform_roadmap_refresh(db, resolution)
+    return LivingRoadmapResponse(**refresh_result)
 
 
 @router.get("/{resolution_id}/roadmap/living", response_model=LivingRoadmapResponse)
@@ -684,6 +695,51 @@ async def get_living_roadmap(
         likelihood_score=resolution.goal_likelihood_score,
         next_refresh=resolution.next_roadmap_refresh,
     )
+
+
+@router.post("/system/auto-refresh")
+async def system_auto_refresh(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Automated job to refresh roadmaps that are due.
+    Triggered by Lambda/EventBridge.
+    """
+    now = datetime.utcnow()
+    # Find active resolutions where next_roadmap_refresh has passed
+    result = await db.execute(
+        select(Resolution)
+        .options(
+            selectinload(Resolution.milestones),
+            selectinload(Resolution.progress_logs),
+            selectinload(Resolution.streak),
+        )
+        .where(
+            and_(
+                Resolution.status == "active",
+                Resolution.next_roadmap_refresh <= now,
+                Resolution.roadmap_generated == True,
+            )
+        )
+    )
+    due_resolutions = result.scalars().all()
+
+    refreshed_count = 0
+    errors = []
+
+    for res in due_resolutions:
+        try:
+            await _perform_roadmap_refresh(db, res)
+            refreshed_count += 1
+        except Exception as e:
+            errors.append({"resolution_id": res.id, "error": str(e)})
+
+    return {
+        "status": "success",
+        "refreshed_count": refreshed_count,
+        "failed_count": len(errors),
+        "errors": errors,
+    }
 
 
 @router.put("/{resolution_id}/roadmap-mode")
@@ -741,12 +797,15 @@ async def save_manual_roadmap(
             description=m_data.description,
             verification_criteria=m_data.verification_criteria,
             target_date=m_data.target_date,
+            status="in_progress" if i == 1 else "pending",
         )
         db.add(milestone)
         milestones.append(milestone)
 
     resolution.roadmap_generated = True
     resolution.roadmap_mode = "manual"
+    resolution.roadmap_needs_refresh = True
+    resolution.next_roadmap_refresh = calculate_next_refresh_date(resolution.cadence)
 
     await db.commit()
 
@@ -1032,19 +1091,7 @@ async def get_user_aggregated_focus(
     week_start = today - timedelta(days=today.weekday())
     week_end = week_start + timedelta(days=6)
 
-    # Check for existing focus
-    result = await db.execute(
-        select(UserWeeklyFocus).where(
-            UserWeeklyFocus.user_id == user.id,
-            UserWeeklyFocus.week_start == week_start,
-        )
-    )
-    existing_focus = result.scalar_one_or_none()
-    if existing_focus:
-        return existing_focus
-
-    # Generate new one if not found
-    # Get all active resolutions for user
+    # Get all active resolutions for user to check for staleness
     res_result = await db.execute(
         select(Resolution).where(
             Resolution.user_id == user.id, Resolution.status == "active"
@@ -1052,6 +1099,29 @@ async def get_user_aggregated_focus(
     )
     resolutions = res_result.scalars().all()
 
+    # Check for existing focus
+    result = await db.execute(
+        select(UserWeeklyFocus)
+        .where(
+            UserWeeklyFocus.user_id == user.id,
+            UserWeeklyFocus.week_start == week_start,
+        )
+        .order_by(UserWeeklyFocus.created_at.desc())
+    )
+    existing_focus = result.scalars().first()
+
+    if existing_focus:
+        # Check if the focus is stale (any active resolution updated after focus creation)
+        is_stale = False
+        if resolutions:
+            latest_res_update = max(r.updated_at for r in resolutions)
+            if latest_res_update > existing_focus.created_at:
+                is_stale = True
+
+        if not is_stale:
+            return existing_focus
+
+    # Generate new one if not found or stale
     if not resolutions:
         return {
             "id": 0,
@@ -1074,22 +1144,35 @@ async def get_user_aggregated_focus(
         for r in resolutions
     ]
 
-    focus_data = await get_aggregated_weekly_focus(res_dicts)
-
-    new_focus = UserWeeklyFocus(
-        user_id=user.id,
-        focus_text=focus_data.get("focus_text", ""),
-        micro_actions=focus_data.get("micro_actions", []),
-        motivation_note=focus_data.get("motivation_note"),
-        week_start=week_start,
-        week_end=week_end,
+    focus_data = await get_aggregated_weekly_focus(
+        res_dicts, metadata={"customer_id": user.id}
     )
 
-    db.add(new_focus)
-    await db.commit()
-    await db.refresh(new_focus)
+    if existing_focus:
+        # Update existing record instead of creating a new one
+        existing_focus.focus_text = focus_data.get("focus_text", "")
+        existing_focus.micro_actions = focus_data.get("micro_actions", [])
+        existing_focus.motivation_note = focus_data.get("motivation_note")
+        existing_focus.created_at = (
+            datetime.utcnow()
+        )  # Reset creation time to mark as fresh
+        await db.commit()
+        await db.refresh(existing_focus)
+        return existing_focus
+    else:
+        new_focus = UserWeeklyFocus(
+            user_id=user.id,
+            focus_text=focus_data.get("focus_text", ""),
+            micro_actions=focus_data.get("micro_actions", []),
+            motivation_note=focus_data.get("motivation_note"),
+            week_start=week_start,
+            week_end=week_end,
+        )
 
-    return new_focus
+        db.add(new_focus)
+        await db.commit()
+        await db.refresh(new_focus)
+        return new_focus
 
 
 @router.put("/weekly-focused/{focus_id}/dismiss")

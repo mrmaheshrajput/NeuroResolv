@@ -81,11 +81,25 @@ async def log_progress(
         mime_type = file.content_type
         # WE DO NOT SAVE THE FILE TO DISK
 
-    # Context for AI
+    # Context for AI - Increase to 20 logs as requested
     recent_logs = sorted(resolution.progress_logs, key=lambda x: x.date, reverse=True)[
-        :5
+        :20
     ]
     history_summary = "\\n".join([f"- {l.date}: {l.content}" for l in recent_logs])
+
+    # Get current in-progress milestone for AI context
+    result = await db.execute(
+        select(Milestone)
+        .where(
+            Milestone.resolution_id == resolution_id, Milestone.status == "in_progress"
+        )
+        .order_by(Milestone.order)
+    )
+    current_milestone = result.scalar_one_or_none()
+
+    milestone_context = ""
+    if current_milestone:
+        milestone_context = f"\nCURRENT MILESTONE: {current_milestone.title}\nCRITERIA: {current_milestone.verification_criteria}"
 
     # analyze
     from app.agents.checkin_agent import analyze_checkin
@@ -94,7 +108,7 @@ async def log_progress(
         input_type=input_type,
         content=media_content if media_content else content,
         mime_type=mime_type,
-        goal_context=resolution.goal_statement,
+        goal_context=f"{resolution.goal_statement}{milestone_context}",
         recent_history=history_summary,
         metadata={"resolution_id": resolution_id, "customer_id": user.id},
     )
@@ -103,6 +117,7 @@ async def log_progress(
         "description", content if content else "Check-in logged via media."
     )
     reflection = ai_result.get("reflection", "Great work!")
+    ai_milestone_achieved = ai_result.get("milestone_achieved", False)
 
     progress_log = ProgressLog(
         resolution_id=resolution_id,
@@ -116,6 +131,84 @@ async def log_progress(
     )
 
     db.add(progress_log)
+
+    # 1. Update Milestone Progress (Mathematical Logic)
+    if current_milestone:
+        # Determine start date for interval
+        # Use previous milestone completed_at or resolution created_at
+        prev_result = await db.execute(
+            select(Milestone)
+            .where(
+                Milestone.resolution_id == resolution_id,
+                Milestone.order < current_milestone.order,
+                Milestone.status == "completed",
+            )
+            .order_by(Milestone.order.desc())
+        )
+        prev_m = prev_result.scalar_one_or_none()
+
+        start_date = (
+            prev_m.completed_at.date()
+            if (prev_m and prev_m.completed_at)
+            else resolution.created_at.date()
+        )
+        target_date = current_milestone.target_date or (
+            today + timedelta(days=7)
+        )  # Fallback
+
+        delta = (target_date - start_date).days
+        if delta <= 0:
+            delta = 7  # Protection
+
+        increment = 0.0
+        cadence = resolution.cadence
+
+        if cadence == "daily":
+            increment = 100.0 / delta
+        elif cadence == "weekdays":
+            # Rough estimate of weekdays
+            weekdays_count = len(
+                [
+                    d
+                    for i in range(delta + 1)
+                    if (start_date + timedelta(days=i)).weekday() < 5
+                ]
+            )
+            increment = 100.0 / max(weekdays_count, 1)
+        elif cadence == "3x_week":
+            weeks = max(delta / 7.0, 1)
+            increment = 100.0 / (weeks * 3)
+        elif cadence == "weekly":
+            weeks = max(delta / 7.0, 1)
+            increment = 100.0 / max(round(weeks), 1)
+        else:
+            increment = 10.0  # Default fallback
+
+        current_milestone.progress_percentage = min(
+            current_milestone.progress_percentage + increment, 99.0
+        )  # Cap at 99% until completed
+
+    # 2. Handle AI-driven completion
+    if ai_milestone_achieved and current_milestone:
+        # Reuse completion logic
+        current_milestone.status = "completed"
+        current_milestone.completed_at = datetime.utcnow()
+        current_milestone.progress_percentage = 100.0
+
+        # Activate next
+        next_res = await db.execute(
+            select(Milestone)
+            .where(
+                Milestone.resolution_id == resolution_id, Milestone.status == "pending"
+            )
+            .order_by(Milestone.order)
+        )
+        next_m = next_res.scalar_one_or_none()
+        if next_m:
+            next_m.status = "in_progress"
+            resolution.current_milestone = next_m.order
+        else:
+            resolution.status = "completed"
 
     streak = resolution.streak
     if streak:

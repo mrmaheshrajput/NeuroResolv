@@ -583,7 +583,13 @@ def _generate_html_email(
                             <table width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td>
-                                        <span style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">NeuroResolv</span>
+                                        <div style="font-size: 20px; font-weight: 700; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                                            <a href="https://neuro-resolv.vercel.app" style="text-decoration: none;">
+                                                <span style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: #8b5cf6;">
+                                                    <span style="color: #8b5cf6;">Neuro</span><span style="color: #ec4899;">Resolv</span>
+                                                </span>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             </table>

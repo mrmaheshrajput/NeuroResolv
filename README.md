@@ -90,12 +90,32 @@ neuroresolv/
 └── README.md                # Project Overview
 ```
 
-## 🎨 Screenshots
+## 🎨 Demo Videos
 
-*(Coming Soon: The interface features a premium dark/glassmorphic aesthetic with vibrant accent colors)*
-- **Negotiation Flow:** Seeing the AI challenge your ambitious goals.
-- **Roadmap Editor:** Fine-tuning your milestones.
-- **Streak Shield UI:** Visual indicators of your earned protection.
+- **Negotiation Flow:** AI challenges your ambitious goals.
+
+<div style="display: inline-flex; align-items: center;">
+  <a href="https://www.youtube.com/watch?v=-U7TnnWurm8" target="_blank" style="display: inline-block;">
+    <img src="https://img.youtube.com/vi/-U7TnnWurm8/0.jpg" style="width: 100%; display: block;">
+  </a>
+</div>
+
+
+- **Roadmap Generation:** AI generates a roadmap for you.
+
+<div style="display: inline-flex; align-items: center;">
+  <a href="https://www.youtube.com/watch?v=-wl8iFewqli8" target="_blank" style="display: inline-block;">
+    <img src="https://img.youtube.com/vi/wl8iFewqli8/0.jpg" style="width: 100%; display: block;">
+  </a>
+</div>
+
+- **Progress Logging:** Log your progress via Text, Audio, or Video.
+
+<div style="display: inline-flex; align-items: center;">
+  <a href="https://www.youtube.com/watch?v=trZFC0Jc-7k" target="_blank" style="display: inline-block;">
+    <img src="https://img.youtube.com/vi/trZFC0Jc-7k/0.jpg" style="width: 100%; display: block;">
+  </a>
+</div>
 
 ## 🚀 Quick Start
 

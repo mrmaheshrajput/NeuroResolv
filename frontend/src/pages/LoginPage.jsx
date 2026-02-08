@@ -46,8 +46,8 @@ export default function LoginPage() {
                         </h1>
 
                         <p className="hero-description animate-fadeIn">
-                            Not just another habit tracker. NeuroResolv is your AI-powered adaptive tutor
-                            that learns how you learn and adjusts to help you actually achieve your goals.
+                            Not just another habit tracker. NeuroResolv is your AI-powered accountability partner
+                            that negotiates realistic goals and protects your journey with intelligent resilience.
                         </p>
 
                         <div className="features-grid">
@@ -55,32 +55,32 @@ export default function LoginPage() {
                                 <div className="feature-icon">
                                     <Target />
                                 </div>
-                                <h3>Dynamic Syllabus</h3>
-                                <p>AI creates personalized 30-day learning paths from your materials</p>
+                                <h3>Reality Check</h3>
+                                <p>AI negotiates sustainable cadences based on your existing workload</p>
                             </div>
 
                             <div className="feature-card animate-fadeIn" style={{ animationDelay: '0.1s' }}>
                                 <div className="feature-icon">
                                     <Sparkles />
                                 </div>
-                                <h3>Micro-Learning</h3>
-                                <p>Daily 30-minute sessions with perfectly chunked content</p>
+                                <h3>Resilient Streaks</h3>
+                                <p>Earn Streak Shields to protect your momentum when life happens</p>
                             </div>
 
                             <div className="feature-card animate-fadeIn" style={{ animationDelay: '0.2s' }}>
                                 <div className="feature-icon">
                                     <CheckCircle />
                                 </div>
-                                <h3>Active Recall</h3>
-                                <p>AI-generated quizzes test understanding, not just completion</p>
+                                <h3>Multi-Modal Logs</h3>
+                                <p>Log progress via Text, Audio, or Video for rich, contextual tracking</p>
                             </div>
 
                             <div className="feature-card animate-fadeIn" style={{ animationDelay: '0.3s' }}>
                                 <div className="feature-icon">
                                     <TrendingUp />
                                 </div>
-                                <h3>Adaptive Loop</h3>
-                                <p>Struggle with a quiz? Tomorrow's content adapts to reinforce weak areas</p>
+                                <h3>Growth Loop</h3>
+                                <p>Feedback-driven prompt optimization powered by Opik observability</p>
                             </div>
                         </div>
 
@@ -89,7 +89,7 @@ export default function LoginPage() {
                                 <Github size={20} />
                                 View on GitHub
                             </a>
-                            <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noopener noreferrer" className="hero-link">
+                            <a href="https://youtu.be/GGSCisenGHA" target="_blank" rel="noopener noreferrer" className="hero-link">
                                 <Youtube size={20} />
                                 Watch Demo
                             </a>
@@ -113,7 +113,7 @@ export default function LoginPage() {
                     <div className="login-form-container animate-fadeIn">
                         <div className="form-header-login-register-page">
                             <h2>Welcome Back</h2>
-                            <p>Sign in to continue your learning journey</p>
+                            <p>Sign in to continue your journey</p>
                         </div>
 
                         {error && (

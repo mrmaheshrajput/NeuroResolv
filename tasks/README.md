@@ -1,13 +1,18 @@
-# NeuroResolv Tasks
+# NeuroResolv Tasks ⚙️
 
-This directory contains background tasks and scripts for the NeuroResolv application.
+Background intelligence and maintenance operations for the NeuroResolv ecosystem.
 
-## Available Tasks
+## Key Operations
 
-Currently, the application uses inline async operations for all tasks.
-Future background tasks can be added here if needed:
+### 📧 Email Reflections
+The `email_reflection_agent` handles periodic outreach based on user lifecycle triggers (Inactivity, Milestone Completion, Streak Break).
 
-- Batch content processing
-- Scheduled syllabus refreshes
-- Analytics aggregation
-- Content pre-generation
+### 🎯 Roadmap Refresh (Weekly)
+Trigger the NeuroResolv API to identify and refresh roadmaps that are due. The AI agent will auto-evolve roadmaps based on user progress logs and streak data.
+
+### 🔄 Prompt Optimization (Weekly)
+A scheduled process that leverages the `MetaPromptOptimizer` from Opik. It retrieves user feedback (Thumbs Down) from the past week and automatically generates refined system prompts for our Roadmap and Negotiation agents.
+
+## 🚀 Potential Extensions
+- **Batch Processing:** Analyzing long-form video check-ins for deeper sentiment analysis.
+- **Predictive Health:** Flagging resolutions at high risk of failure based on early engagement patterns.

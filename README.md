@@ -128,10 +128,12 @@ neuroresolv/
 
 > If you see errors related to Opik, then navigate to `backend/opik` and run `./opik.sh` to start the Opik server. The code when running locally preferes locally running Opik server.
 
-## 🚀 Quick Start
+> If you see "Failed to Fetch" error in the frontend, it is because database is not running or backend is unable to reach the database.
+
+> If you see "Invalid API Key" error, then check your API keys in the .env file. Refer to `frontend/README.md` to understand how to override the API keys.
 
 ### Prerequisites
-- Python 3.12
+- Python 3.13.0 (To run poetry commands from inside `backend`, you must have the python version matching in `backend/.python-version` file installed. Use `pyenv` or `conda` to manage python versions)
 - Node.js 20+
 - Docker & Docker Compose (optional but recommended)
 

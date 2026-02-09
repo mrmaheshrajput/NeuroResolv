@@ -12,6 +12,7 @@ NeuroResolv now supports the Model Context Protocol (MCP) directly via our FastA
 ## Configuration (SSE)
 
 The MCP server is hosted at: `http://localhost:8000/mcp/sse` (Local) or `https://neuroresolv-api.ffinity.com/mcp/sse` (Production).
+> Production is currently under development. Please try local one.
 
 ### Authentication
 
@@ -44,7 +45,7 @@ To use this with `gemini cli`, configure it to use the SSE endpoint:
 # Add the NeuroResolv LOCAL MCP server
 gemini mcp add neuroresolv --type sse http://localhost:8000/mcp/sse --header "Authorization: Bearer YOUR_TOKEN_HERE"
 
-# Add the NeuroResolv PRODUCTION MCP server
+# Add the NeuroResolv PRODUCTION MCP server (Production is currently under development.)
 gemini mcp add neuroresolv --type sse https://neuroresolv-api.ffinity.com/mcp/sse --header "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 

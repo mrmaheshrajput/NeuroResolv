@@ -89,7 +89,7 @@ export default function LoginPage() {
                                 <Github size={20} />
                                 View on GitHub
                             </a>
-                            <a href="https://youtu.be/GGSCisenGHA" target="_blank" rel="noopener noreferrer" className="hero-link">
+                            <a href="https://youtu.be/m9-EIS1113Q" target="_blank" rel="noopener noreferrer" className="hero-link">
                                 <Youtube size={20} />
                                 Watch Demo
                             </a>

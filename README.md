@@ -47,6 +47,9 @@ Log your progress via **Text, Audio, or Video**. Whether it's a quick note, a vo
 - **Streak Pause:** Planning a trip or need a mental health break? Pause your journey without losing your momentum.
 - **Accountability Groups:** Link with up to two friends. Shared streaks mean shared responsibility—if one falls, the joint streak breaks.
 
+### 🧠 MCP Support
+NeuroResolv provides MCP (Model Context Protocol) support, allowing you to integrate with AI agents like Gemini to enhance your productivity.
+
 ### 📧 Intelligent Reflections
 Receive carefully timed emails for milestones, encouragement during inactivity, or a "welcome back" summary when resuming from a pause.
 
@@ -82,6 +85,7 @@ neuroresolv/
 │   │   └── db/              # Models & Migrations
 │   ├── main.py              # Entry point
 │   └── README.md            # Backend specific docs
+├── MCP_README.md            # MCP specific docs
 ├── frontend/
 │   ├── src/                 # React source code
 │   └── README.md            # Frontend development guide

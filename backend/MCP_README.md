@@ -49,6 +49,8 @@ gemini mcp add neuroresolv --type sse http://localhost:8000/mcp/sse --header "Au
 gemini mcp add neuroresolv --type sse https://neuroresolv-api.ffinity.com/mcp/sse --header "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
+<img src="../frontend/public/gemini_cli_neuroresolv_mcp.png" style="width: 100%; display: block;">
+
 ## Usage with Other Clients
 
 - **Cursor**: Go to Settings -> MCP -> Add New Server. Choice: `SSE`. URL: `https://neuroresolv-api.ffinity.com/mcp/sse`.

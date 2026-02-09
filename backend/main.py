@@ -8,9 +8,12 @@ from app.api import (
     resolutions_router,
     streak_groups_router,
 )
+from app.mcp import mcp
 from app.config import get_settings
 from app.db import create_tables
 from app.observability import init_opik
+from app.core import decode_token
+from app.core.context import current_user_id
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -60,12 +63,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+class MCPAuthMiddleware:
+    """Simple ASGI middleware to extract user from token for MCP tools."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            headers = dict(scope.get("headers", []))
+            auth_header = headers.get(b"authorization", b"").decode("utf-8")
+            if auth_header.startswith("Bearer "):
+                token = auth_header.replace("Bearer ", "")
+                payload = decode_token(token)
+                if payload and "sub" in payload:
+                    current_user_id.set(int(payload["sub"]))
+
+        await self.app(scope, receive, send)
+
+
 app.include_router(auth_router, dependencies=[Depends(verify_api_key)])
 app.include_router(resolutions_router, dependencies=[Depends(verify_api_key)])
 app.include_router(progress_router, dependencies=[Depends(verify_api_key)])
 app.include_router(email_router, dependencies=[Depends(verify_api_key)])
 app.include_router(streak_groups_router, dependencies=[Depends(verify_api_key)])
 app.include_router(prompt_optimization_router, dependencies=[Depends(verify_api_key)])
+
+# Mount MCP server with authentication middleware
+app.mount("/mcp", MCPAuthMiddleware(mcp.sse_app()))
 
 
 @app.get("/")

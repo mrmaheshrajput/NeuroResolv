@@ -1,4 +1,5 @@
 from mcp.server.fastmcp import FastMCP, Context
+from mcp.server.transport_security import TransportSecuritySettings
 from app.db import (
     async_session_maker,
     Resolution,
@@ -14,7 +15,10 @@ import os
 from app.core.context import current_user_id
 
 # Initialize FastMCP server
-mcp = FastMCP("NeuroResolv")
+mcp = FastMCP(
+    "NeuroResolv",
+    transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
+)
 
 
 async def get_authenticated_user_id() -> int:

@@ -1,7 +1,7 @@
 <h1 align="center" style="border-bottom: none">
     <div>
         <a href="https://neuro-resolv.vercel.app/"><picture>
-            <img alt="NeuroResolv logo" src="https://raw.githubusercontent.com/mrmaheshrajput/NeuroResolv/refs/heads/main/frontend/public/icon.svg" width="60" />
+            <img alt="NeuroResolv logo" src="https://raw.githubusercontent.com/mrmaheshrajput/NeuroResolv/refs/heads/main/frontend/public/icon.svg" width="80" />
         </picture></a>
         <br>
         NeuroResolv 🧠✨
@@ -26,7 +26,7 @@ NeuroResolv is an intelligent resolution partner that bridges the gap between in
 
 ## 🎯 The Problem
 
-92% of New Year's resolutions fail by February. Why? Because motivation is a finite resource, life is unpredictable, and most "trackers" are just passive digital graveyards of unfulfilled intent. They don't account for your existing workload, they don't adapt when you stumble, and they provide zero tactical guidance. You aren't failing because of a lack of will; you're failing because of a lack of a system that breathes with you.
+92% of New Year's resolutions fail by February because motivation is a finite resource, life is unpredictable, and most "trackers" are just passive digital graveyards of unfulfilled intent. They don't account for your existing workload, they don't adapt when you stumble, and they provide zero tactical guidance. You aren't failing because of a lack of will; you're failing because of a lack of a system that adapts to your life's circumstances.
 
 ## ✨ Key Features
 
@@ -63,6 +63,43 @@ Receive carefully timed emails for milestones, encouragement during inactivity, 
 | **Observability** | Opik Cloud | Tracing, evaluations, and prompt optimization |
 | **Database** | PostgreSQL | Robust data persistence |
 | **Deployment** | Docker Compose | Seamless local & production orchestration |
+
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    User([User])
+    Cloudflare[Cloudflare DNS]
+    Vercel[Vercel - Frontend]
+    ALB[AWS Load Balancer]
+    ECS[AWS ECS - Backend API]
+    RDS[(AWS RDS - Postgres)]
+    Opik[Opik Cloud]
+    Gemini[Google Gemini API]
+    Tasks[Background Tasks]
+    CDN[CDN]
+    Cron[AWS EventBridge]
+
+    User --> CDN
+    CDN -.-> Vercel
+    Vercel -.->|API Calls| Cloudflare
+    Cloudflare --> ALB
+    ALB -->|Matching Targets| ECS
+    ECS --> RDS
+    ECS -->|Observability| Opik
+    ECS --> Gemini
+    Cron --> Tasks
+    Tasks --> ECS
+```
+
+## 🌐 Production Infrastructure
+
+The application is deployed using a robust, cloud-native stack:
+
+- **Frontend:** Hosted on **Vercel** for high performance and global edge delivery.
+- **Backend API:** Orchestrated via **AWS ECS** (Elastic Container Service) running high-performance containers.
+- **Networking:** An **AWS Load Balancer (ALB)** manages traffic to the backend services. The ALB DNS is integrated into our domain records, which are managed and frontended by **Cloudflare DNS** for enhanced security and performance.
+- **Database:** **AWS RDS Postgres** provides our reliable, managed relational data storage.
 
 ## 📊 Opik: The Data Flywheel & Guardrails
 

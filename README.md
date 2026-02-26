@@ -12,6 +12,9 @@
 NeuroResolv is an intelligent resolution partner that bridges the gap between intention and action. Built for the 2026 Commit to Change Hackathon, it combines reality-check negotiation, multi-modal check-ins, and feedback-driven prompt optimization.
 </p>
 
+> [!IMPORTANT]
+> As of February 26, 2026, the Vercel frontend app and backend API server have been removed from the cloud. However, the available code can still be used to start the application locally. Please refer to the [Quick Start](#-quick-start) section for instructions.
+
 <div align="center">
 
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff)](#)
@@ -92,14 +95,18 @@ graph TD
     Tasks --> ECS
 ```
 
-## 🌐 Production Infrastructure
+## 🌐 Production Infrastructure (Legacy)
 
-The application is deployed using a robust, cloud-native stack:
+> [!NOTE]
+> The cloud infrastructure described below is no longer active as of February 26, 2026. This section is preserved for architectural reference.
+
+The application was previously deployed using a robust, cloud-native stack:
 
 - **Frontend:** Hosted on **Vercel** for high performance and global edge delivery.
 - **Backend API:** Orchestrated via **AWS ECS** (Elastic Container Service) running high-performance containers.
 - **Networking:** An **AWS Load Balancer (ALB)** manages traffic to the backend services. The ALB DNS is integrated into our domain records, which are managed and frontended by **Cloudflare DNS** for enhanced security and performance.
 - **Database:** **AWS RDS Postgres** provides our reliable, managed relational data storage.
+
 
 ## 📊 Opik: The Data Flywheel & Guardrails
 
